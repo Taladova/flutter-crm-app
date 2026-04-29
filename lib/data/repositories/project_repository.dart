@@ -47,4 +47,8 @@ class ProjectRepository {
       return null;
     }
   }
+
+  Future<void> resetProjects() async {
+    await saveProjects(mockProjects);
+  }
 }

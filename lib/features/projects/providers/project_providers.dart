@@ -9,26 +9,27 @@ final projectRepositoryProvider = Provider<ProjectRepository>((ref) {
 
 final projectControllerProvider =
     AsyncNotifierProvider<ProjectController, List<ProjectModel>>(
-  ProjectController.new,
-);
-
-final projectByIdProvider = Provider.family<ProjectModel?, String>(
-  (ref, projectId) {
-    final projectsState = ref.watch(projectControllerProvider);
-
-    return projectsState.when(
-      data: (projects) {
-        try {
-          return projects.firstWhere((project) => project.id == projectId);
-        } catch (_) {
-          return null;
-        }
-      },
-      loading: () => null,
-      error: (_, __) => null,
+      ProjectController.new,
     );
-  },
-);
+
+final projectByIdProvider = Provider.family<ProjectModel?, String>((
+  ref,
+  projectId,
+) {
+  final projectsState = ref.watch(projectControllerProvider);
+
+  return projectsState.when(
+    data: (projects) {
+      try {
+        return projects.firstWhere((project) => project.id == projectId);
+      } catch (_) {
+        return null;
+      }
+    },
+    loading: () => null,
+    error: (_, __) => null,
+  );
+});
 
 class ProjectController extends AsyncNotifier<List<ProjectModel>> {
   @override
@@ -40,13 +41,19 @@ class ProjectController extends AsyncNotifier<List<ProjectModel>> {
   Future<void> addProject(ProjectModel project) async {
     final currentProjects = state.value ?? [];
 
-    final updatedProjects = [
-      project,
-      ...currentProjects,
-    ];
+    final updatedProjects = [project, ...currentProjects];
 
     state = AsyncValue.data(updatedProjects);
 
     await ref.read(projectRepositoryProvider).saveProjects(updatedProjects);
+  }
+
+  Future<void> resetProjects() async {
+    final repository = ref.read(projectRepositoryProvider);
+
+    await repository.resetProjects();
+
+    final projects = await repository.getProjects();
+    state = AsyncValue.data(projects);
   }
 }

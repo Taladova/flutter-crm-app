@@ -47,4 +47,13 @@ class ClientController extends AsyncNotifier<List<ClientModel>> {
 
     await ref.read(clientRepositoryProvider).saveClients(updatedClients);
   }
+
+  Future<void> resetClients() async {
+    final repository = ref.read(clientRepositoryProvider);
+
+    await repository.resetClients();
+
+    final clients = await repository.getClients();
+    state = AsyncValue.data(clients);
+  }
 }

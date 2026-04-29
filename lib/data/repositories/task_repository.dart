@@ -31,10 +31,12 @@ class TaskRepository {
   Future<void> saveTasks(List<TaskModel> tasks) async {
     final prefs = await SharedPreferences.getInstance();
 
-    final encoded = jsonEncode(
-      tasks.map((task) => task.toJson()).toList(),
-    );
+    final encoded = jsonEncode(tasks.map((task) => task.toJson()).toList());
 
     await prefs.setString(_tasksKey, encoded);
+  }
+
+  Future<void> resetTasks() async {
+    await saveTasks(mockTasks);
   }
 }

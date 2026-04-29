@@ -47,4 +47,8 @@ class ClientRepository {
       return null;
     }
   }
+
+  Future<void> resetClients() async {
+    await saveClients(mockClients);
+  }
 }

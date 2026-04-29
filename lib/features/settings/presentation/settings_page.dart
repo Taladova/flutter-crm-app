@@ -3,11 +3,17 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/app_theme.dart';
 
-class SettingsPage extends StatelessWidget {
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../clients/providers/client_providers.dart';
+import '../../projects/providers/project_providers.dart';
+import '../../tasks/providers/task_providers.dart';
+
+class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       body: SafeArea(
@@ -61,25 +67,54 @@ class SettingsPage extends StatelessWidget {
                 style: Theme.of(context).textTheme.titleLarge,
               ),
               const SizedBox(height: 14),
-              const _SettingsSection(
+              _SettingsSection(
                 children: [
-                  _SettingsTile(
+                  const _SettingsTile(
                     icon: Icons.cloud_sync_rounded,
                     title: 'Synchronisation cloud',
                     subtitle: 'Préparé pour Firebase',
                     trailing: _ComingSoonBadge(),
                   ),
-                  _SettingsTile(
+                  const _SettingsTile(
                     icon: Icons.people_alt_rounded,
                     title: 'Espace client',
                     subtitle: 'Accès client au suivi projet',
                     trailing: _ComingSoonBadge(),
                   ),
-                  _SettingsTile(
+                  const _SettingsTile(
                     icon: Icons.picture_as_pdf_rounded,
                     title: 'Export PDF',
                     subtitle: 'Devis, avancement et rapport projet',
                     trailing: _ComingSoonBadge(),
+                  ),
+                  _SettingsTile(
+                    icon: Icons.restart_alt_rounded,
+                    title: 'Réinitialiser la démo',
+                    subtitle: 'Restaurer les données de départ',
+                    trailing: const Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      size: 16,
+                      color: AppTheme.greyTextColor,
+                    ),
+                    onTap: () async {
+                      await ref
+                          .read(clientControllerProvider.notifier)
+                          .resetClients();
+                      await ref
+                          .read(projectControllerProvider.notifier)
+                          .resetProjects();
+                      await ref
+                          .read(taskControllerProvider.notifier)
+                          .resetTasks();
+
+                      if (!context.mounted) return;
+
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Données de démo réinitialisées.'),
+                        ),
+                      );
+                    },
                   ),
                 ],
               ),
@@ -277,55 +312,60 @@ class _SettingsTile extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.trailing,
+    this.onTap,
   });
 
   final IconData icon;
   final String title;
   final String subtitle;
   final Widget trailing;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        children: [
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              color: AppTheme.primaryColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(14),
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: AppTheme.primaryColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(icon, color: AppTheme.primaryColor, size: 21),
             ),
-            child: Icon(icon, color: AppTheme.primaryColor, size: 21),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    color: AppTheme.darkTextColor,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w900,
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      color: AppTheme.darkTextColor,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    color: AppTheme.greyTextColor,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      color: AppTheme.greyTextColor,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          trailing,
-        ],
+            trailing,
+          ],
+        ),
       ),
     );
   }

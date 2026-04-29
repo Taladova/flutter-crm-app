@@ -17,9 +17,9 @@ class _SplashPageState extends State<SplashPage> {
   void initState() {
     super.initState();
 
-    Timer(const Duration(seconds: 2), () {
+    Timer(const Duration(seconds: 1), () {
       if (mounted) {
-        context.go('/onboarding');
+        context.go('/main');
       }
     });
   }
@@ -43,6 +43,7 @@ class _SplashPageState extends State<SplashPage> {
                     borderRadius: BorderRadius.circular(28),
                     boxShadow: [
                       BoxShadow(
+                        // ignore: deprecated_member_use
                         color: Colors.black.withOpacity(0.12),
                         blurRadius: 24,
                         offset: const Offset(0, 12),
@@ -71,6 +72,7 @@ class _SplashPageState extends State<SplashPage> {
                   'Gérez vos clients, vos projets\net votre activité avec clarté.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
+                    // ignore: deprecated_member_use
                     color: Colors.white.withOpacity(0.85),
                     fontSize: 16,
                     height: 1.5,
@@ -84,6 +86,7 @@ class _SplashPageState extends State<SplashPage> {
                   child: CircularProgressIndicator(
                     strokeWidth: 3,
                     valueColor: AlwaysStoppedAnimation<Color>(
+                      // ignore: deprecated_member_use
                       Colors.white.withOpacity(0.9),
                     ),
                   ),
