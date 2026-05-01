@@ -1,42 +1,45 @@
-import 'dart:convert';
-
-import 'package:shared_preferences/shared_preferences.dart';
-
-import '../mock/mock_tasks.dart';
 import '../models/task_model.dart';
+import '../services/firestore_service.dart';
 
 class TaskRepository {
-  const TaskRepository();
+  const TaskRepository({
+    required this.firestoreService,
+  });
 
-  static const String _tasksKey = 'tasks';
+  final FirestoreService firestoreService;
 
   Future<List<TaskModel>> getTasks() async {
-    await Future.delayed(const Duration(milliseconds: 400));
+    final snapshot = await firestoreService.userCollection('tasks').get();
 
-    final prefs = await SharedPreferences.getInstance();
-    final tasksString = prefs.getString(_tasksKey);
-
-    if (tasksString == null) {
-      await saveTasks(mockTasks);
-      return mockTasks;
-    }
-
-    final List<dynamic> decoded = jsonDecode(tasksString);
-
-    return decoded
-        .map((item) => TaskModel.fromJson(item as Map<String, dynamic>))
-        .toList();
+    return snapshot.docs.map((doc) {
+      return TaskModel.fromJson(doc.data());
+    }).toList();
   }
 
-  Future<void> saveTasks(List<TaskModel> tasks) async {
-    final prefs = await SharedPreferences.getInstance();
+  Future<void> addTask(TaskModel task) async {
+    await firestoreService
+        .userCollection('tasks')
+        .doc(task.id)
+        .set(task.toJson());
+  }
 
-    final encoded = jsonEncode(tasks.map((task) => task.toJson()).toList());
-
-    await prefs.setString(_tasksKey, encoded);
+  Future<void> updateTask(TaskModel task) async {
+    await firestoreService
+        .userCollection('tasks')
+        .doc(task.id)
+        .set(task.toJson());
   }
 
   Future<void> resetTasks() async {
-    await saveTasks(mockTasks);
+    final collection = firestoreService.userCollection('tasks');
+    final snapshot = await collection.get();
+
+    final batch = firestoreService.firestore.batch();
+
+    for (final doc in snapshot.docs) {
+      batch.delete(doc.reference);
+    }
+
+    await batch.commit();
   }
 }

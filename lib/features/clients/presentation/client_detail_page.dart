@@ -22,7 +22,7 @@ class ClientDetailPage extends ConsumerWidget {
     final projectsAsync = ref.watch(projectControllerProvider);
 
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: AppTheme.pageBackground(context),
       body: SafeArea(
         child: client == null
             ? const Center(child: Text('Client introuvable'))
@@ -100,13 +100,13 @@ class _DetailHeader extends StatelessWidget {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppTheme.cardColor(context),
               borderRadius: BorderRadius.circular(15),
               border: Border.all(color: const Color(0xFFE2E8F0)),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.arrow_back_rounded,
-              color: AppTheme.darkTextColor,
+              color: AppTheme.mainTextColor(context),
             ),
           ),
         ),
@@ -115,10 +115,10 @@ class _DetailHeader extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Détail client',
                 style: TextStyle(
-                  color: AppTheme.greyTextColor,
+                  color: AppTheme.secondaryTextColor(context),
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                 ),
@@ -135,7 +135,7 @@ class _DetailHeader extends StatelessWidget {
             color: AppTheme.primaryColor,
             borderRadius: BorderRadius.circular(15),
           ),
-          child: const Icon(Icons.edit_rounded, color: Colors.white, size: 21),
+          child: Icon(Icons.edit_rounded, color: AppTheme.cardColor(context), size: 21),
         ),
       ],
     );
@@ -153,7 +153,7 @@ class _ClientInfoCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.cardColor(context),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: const Color(0xFFE2E8F0)),
         boxShadow: [
@@ -181,8 +181,8 @@ class _ClientInfoCard extends StatelessWidget {
           const SizedBox(height: 16),
           Text(
             client.name,
-            style: const TextStyle(
-              color: AppTheme.darkTextColor,
+            style: TextStyle(
+              color: AppTheme.mainTextColor(context),
               fontSize: 22,
               fontWeight: FontWeight.w900,
             ),
@@ -190,8 +190,8 @@ class _ClientInfoCard extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             client.company,
-            style: const TextStyle(
-              color: AppTheme.greyTextColor,
+            style: TextStyle(
+              color: AppTheme.secondaryTextColor(context),
               fontSize: 14,
               fontWeight: FontWeight.w600,
             ),
@@ -242,7 +242,7 @@ class _QuickActions extends StatelessWidget {
                 child: Container(
                   height: 84,
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: AppTheme.cardColor(context),
                     borderRadius: BorderRadius.circular(22),
                     border: Border.all(color: const Color(0xFFE2E8F0)),
                   ),
@@ -253,8 +253,8 @@ class _QuickActions extends StatelessWidget {
                       const SizedBox(height: 8),
                       Text(
                         action.title,
-                        style: const TextStyle(
-                          color: AppTheme.darkTextColor,
+                        style: TextStyle(
+                          color: AppTheme.mainTextColor(context),
                           fontSize: 13,
                           fontWeight: FontWeight.w800,
                         ),
@@ -297,15 +297,15 @@ class _CreateProjectButton extends StatelessWidget {
             ),
           ],
         ),
-        child: const Row(
+        child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.add_rounded, color: Colors.white),
-            SizedBox(width: 8),
+            Icon(Icons.add_rounded, color: AppTheme.cardColor(context)),
+            const SizedBox(width: 8),
             Text(
               'Créer un projet pour ce client',
               style: TextStyle(
-                color: Colors.white,
+                color: AppTheme.cardColor(context),
                 fontSize: 14,
                 fontWeight: FontWeight.w900,
               ),
@@ -364,8 +364,8 @@ class _ProjectMiniCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   project.title,
-                  style: const TextStyle(
-                    color: AppTheme.darkTextColor,
+                  style: TextStyle(
+                    color: AppTheme.mainTextColor(context),
                     fontSize: 15,
                     fontWeight: FontWeight.w900,
                   ),
@@ -391,8 +391,8 @@ class _ProjectMiniCard extends StatelessWidget {
               const SizedBox(width: 12),
               Text(
                 '$percent%',
-                style: const TextStyle(
-                  color: AppTheme.darkTextColor,
+                style: TextStyle(
+                  color: AppTheme.mainTextColor(context),
                   fontWeight: FontWeight.w800,
                 ),
               ),
@@ -413,14 +413,14 @@ class _NotesCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.cardColor(context),
         borderRadius: BorderRadius.circular(22),
         border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
-      child: const Text(
+      child: Text(
         'Client intéressé par un site WordPress moderne avec une boutique en ligne. Prévoir une proposition avec design premium, pages produits et configuration WooCommerce.',
         style: TextStyle(
-          color: AppTheme.greyTextColor,
+          color: AppTheme.secondaryTextColor(context),
           fontSize: 14,
           height: 1.6,
           fontWeight: FontWeight.w600,
@@ -456,12 +456,12 @@ class _InfoRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, color: AppTheme.greyTextColor, size: 20),
+        Icon(icon, color: AppTheme.secondaryTextColor(context), size: 20),
         const SizedBox(width: 12),
         Text(
           '$label : ',
-          style: const TextStyle(
-            color: AppTheme.greyTextColor,
+          style: TextStyle(
+            color: AppTheme.secondaryTextColor(context),
             fontSize: 13,
             fontWeight: FontWeight.w700,
           ),
@@ -469,8 +469,8 @@ class _InfoRow extends StatelessWidget {
         Expanded(
           child: Text(
             value,
-            style: const TextStyle(
-              color: AppTheme.darkTextColor,
+            style: TextStyle(
+              color: AppTheme.mainTextColor(context),
               fontSize: 13,
               fontWeight: FontWeight.w800,
             ),

@@ -1,10 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../data/models/client_model.dart';
+import '../../../data/providers/firestore_providers.dart';
 import '../../../data/repositories/client_repository.dart';
 
 final clientRepositoryProvider = Provider<ClientRepository>((ref) {
-  return const ClientRepository();
+  return ClientRepository(
+    firestoreService: ref.watch(firestoreServiceProvider),
+  );
 });
 
 final clientControllerProvider =
@@ -40,20 +43,16 @@ class ClientController extends AsyncNotifier<List<ClientModel>> {
 
   Future<void> addClient(ClientModel client) async {
     final currentClients = state.value ?? [];
-
     final updatedClients = [client, ...currentClients];
 
     state = AsyncValue.data(updatedClients);
 
-    await ref.read(clientRepositoryProvider).saveClients(updatedClients);
+    await ref.read(clientRepositoryProvider).addClient(client);
   }
 
   Future<void> resetClients() async {
     final repository = ref.read(clientRepositoryProvider);
-
     await repository.resetClients();
-
-    final clients = await repository.getClients();
-    state = AsyncValue.data(clients);
+    state = AsyncValue.data(await repository.getClients());
   }
 }

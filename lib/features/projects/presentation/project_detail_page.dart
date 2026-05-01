@@ -23,7 +23,7 @@ class ProjectDetailPage extends ConsumerWidget {
     final projectTasks = ref.watch(tasksByProjectProvider(projectId));
 
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: AppTheme.pageBackground(context),
       body: SafeArea(
         child: project == null
             ? const Center(child: Text('Projet introuvable'))
@@ -58,11 +58,11 @@ class ProjectDetailPage extends ConsumerWidget {
                           color: AppTheme.primaryColor,
                           borderRadius: BorderRadius.circular(16),
                         ),
-                        child: const Center(
+                        child: Center(
                           child: Text(
                             'Ajouter une tâche',
                             style: TextStyle(
-                              color: Colors.white,
+                              color: AppTheme.cardColor(context),
                               fontWeight: FontWeight.w900,
                             ),
                           ),
@@ -119,7 +119,7 @@ class _ProjectTaskCard extends ConsumerWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppTheme.cardColor(context),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: const Color(0xFFE2E8F0)),
         ),
@@ -141,9 +141,9 @@ class _ProjectTaskCard extends ConsumerWidget {
             ),
             Text(
               task.deadline,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
-                color: AppTheme.greyTextColor,
+                color: AppTheme.secondaryTextColor(context),
               ),
             ),
           ],
@@ -168,13 +168,13 @@ class _ProjectHeader extends StatelessWidget {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppTheme.cardColor(context),
               borderRadius: BorderRadius.circular(15),
               border: Border.all(color: const Color(0xFFE2E8F0)),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.arrow_back_rounded,
-              color: AppTheme.darkTextColor,
+              color: AppTheme.mainTextColor(context),
             ),
           ),
         ),
@@ -183,10 +183,10 @@ class _ProjectHeader extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Détail projet',
                 style: TextStyle(
-                  color: AppTheme.greyTextColor,
+                  color: AppTheme.secondaryTextColor(context),
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                 ),
@@ -208,7 +208,7 @@ class _ProjectHeader extends StatelessWidget {
             color: AppTheme.primaryColor,
             borderRadius: BorderRadius.circular(15),
           ),
-          child: const Icon(Icons.edit_rounded, color: Colors.white, size: 21),
+          child: Icon(Icons.edit_rounded, color: AppTheme.cardColor(context), size: 21),
         ),
       ],
     );
@@ -244,8 +244,8 @@ class _ProjectHeroCard extends StatelessWidget {
           const SizedBox(height: 18),
           Text(
             project.title,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: AppTheme.cardColor(context),
               fontSize: 24,
               fontWeight: FontWeight.w900,
               height: 1.2,
@@ -255,7 +255,7 @@ class _ProjectHeroCard extends StatelessWidget {
           Text(
             '${project.clientName} • ${project.type}',
             style: TextStyle(
-              color: Colors.white.withOpacity(0.85),
+              color: AppTheme.cardColor(context).withOpacity(0.85),
               fontSize: 14,
               fontWeight: FontWeight.w600,
             ),
@@ -269,16 +269,16 @@ class _ProjectHeroCard extends StatelessWidget {
                   child: LinearProgressIndicator(
                     value: project.progress,
                     minHeight: 10,
-                    backgroundColor: Colors.white.withOpacity(0.22),
-                    color: Colors.white,
+                    backgroundColor: AppTheme.cardColor(context).withOpacity(0.22),
+                    color: AppTheme.cardColor(context),
                   ),
                 ),
               ),
               const SizedBox(width: 14),
               Text(
                 '$percent%',
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: AppTheme.cardColor(context),
                   fontSize: 15,
                   fontWeight: FontWeight.w900,
                 ),
@@ -381,8 +381,8 @@ class _TimelineRow extends StatelessWidget {
         Expanded(
           child: Text(
             item.title,
-            style: const TextStyle(
-              color: AppTheme.darkTextColor,
+            style: TextStyle(
+              color: AppTheme.mainTextColor(context),
               fontSize: 14,
               fontWeight: FontWeight.w800,
             ),
@@ -390,8 +390,8 @@ class _TimelineRow extends StatelessWidget {
         ),
         Text(
           item.date,
-          style: const TextStyle(
-            color: AppTheme.greyTextColor,
+          style: TextStyle(
+            color: AppTheme.secondaryTextColor(context),
             fontSize: 12,
             fontWeight: FontWeight.w700,
           ),
@@ -410,10 +410,10 @@ class _ProjectNotesCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: _cardDecoration(),
-      child: const Text(
+      child: Text(
         'Projet WordPress à présenter comme une boutique premium. Prévoir une homepage claire, des fiches produits soignées, une expérience mobile fluide et une configuration WooCommerce propre.',
         style: TextStyle(
-          color: AppTheme.greyTextColor,
+          color: AppTheme.secondaryTextColor(context),
           fontSize: 14,
           height: 1.6,
           fontWeight: FontWeight.w600,
@@ -449,12 +449,12 @@ class _InfoRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, color: AppTheme.greyTextColor, size: 20),
+        Icon(icon, color: AppTheme.secondaryTextColor(context), size: 20),
         const SizedBox(width: 12),
         Text(
           '$label : ',
-          style: const TextStyle(
-            color: AppTheme.greyTextColor,
+          style: TextStyle(
+            color: AppTheme.secondaryTextColor(context),
             fontSize: 13,
             fontWeight: FontWeight.w700,
           ),
@@ -462,8 +462,8 @@ class _InfoRow extends StatelessWidget {
         Expanded(
           child: Text(
             value,
-            style: const TextStyle(
-              color: AppTheme.darkTextColor,
+            style: TextStyle(
+              color: AppTheme.mainTextColor(context),
               fontSize: 13,
               fontWeight: FontWeight.w900,
             ),
@@ -484,13 +484,13 @@ class _StatusBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.18),
+        color: AppTheme.cardColor(context).withOpacity(0.18),
         borderRadius: BorderRadius.circular(100),
       ),
       child: Text(
         status,
-        style: const TextStyle(
-          color: Colors.white,
+        style: TextStyle(
+          color: AppTheme.cardColor(context),
           fontSize: 12,
           fontWeight: FontWeight.w900,
         ),

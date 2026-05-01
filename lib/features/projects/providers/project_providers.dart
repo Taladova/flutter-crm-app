@@ -1,35 +1,37 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../data/models/project_model.dart';
+import '../../../data/providers/firestore_providers.dart';
 import '../../../data/repositories/project_repository.dart';
 
 final projectRepositoryProvider = Provider<ProjectRepository>((ref) {
-  return const ProjectRepository();
+  return ProjectRepository(
+    firestoreService: ref.watch(firestoreServiceProvider),
+  );
 });
 
 final projectControllerProvider =
     AsyncNotifierProvider<ProjectController, List<ProjectModel>>(
-      ProjectController.new,
+  ProjectController.new,
+);
+
+final projectByIdProvider = Provider.family<ProjectModel?, String>(
+  (ref, projectId) {
+    final projectsState = ref.watch(projectControllerProvider);
+
+    return projectsState.when(
+      data: (projects) {
+        try {
+          return projects.firstWhere((project) => project.id == projectId);
+        } catch (_) {
+          return null;
+        }
+      },
+      loading: () => null,
+      error: (_, __) => null,
     );
-
-final projectByIdProvider = Provider.family<ProjectModel?, String>((
-  ref,
-  projectId,
-) {
-  final projectsState = ref.watch(projectControllerProvider);
-
-  return projectsState.when(
-    data: (projects) {
-      try {
-        return projects.firstWhere((project) => project.id == projectId);
-      } catch (_) {
-        return null;
-      }
-    },
-    loading: () => null,
-    error: (_, __) => null,
-  );
-});
+  },
+);
 
 class ProjectController extends AsyncNotifier<List<ProjectModel>> {
   @override
@@ -40,20 +42,15 @@ class ProjectController extends AsyncNotifier<List<ProjectModel>> {
 
   Future<void> addProject(ProjectModel project) async {
     final currentProjects = state.value ?? [];
-
     final updatedProjects = [project, ...currentProjects];
 
     state = AsyncValue.data(updatedProjects);
 
-    await ref.read(projectRepositoryProvider).saveProjects(updatedProjects);
+    await ref.read(projectRepositoryProvider).addProject(project);
   }
 
   Future<void> resetProjects() async {
-    final repository = ref.read(projectRepositoryProvider);
-
-    await repository.resetProjects();
-
-    final projects = await repository.getProjects();
-    state = AsyncValue.data(projects);
+    await ref.read(projectRepositoryProvider).resetProjects();
+    state = const AsyncValue.data([]);
   }
 }

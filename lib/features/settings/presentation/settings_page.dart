@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/app_theme.dart';
-
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
+import '../../../app/theme_provider.dart';
+import '../../auth/providers/auth_providers.dart';
 import '../../clients/providers/client_providers.dart';
 import '../../projects/providers/project_providers.dart';
 import '../../tasks/providers/task_providers.dart';
@@ -14,8 +14,11 @@ class SettingsPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final currentUser = ref.watch(firebaseAuthProvider).currentUser;
+    final userEmail = currentUser?.email ?? 'Compte inconnu';
+
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: AppTheme.pageBackground(context),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
@@ -24,30 +27,36 @@ class SettingsPage extends ConsumerWidget {
             children: [
               const _SettingsHeader(),
               const SizedBox(height: 24),
-              const _ProfileCard(),
+              _ProfileCard(email: userEmail),
               const SizedBox(height: 24),
               Text(
                 'Préférences',
                 style: Theme.of(context).textTheme.titleLarge,
               ),
               const SizedBox(height: 14),
-              const _SettingsSection(
+              _SettingsSection(
                 children: [
-                  _SettingsTile(
-                    icon: Icons.dark_mode_rounded,
-                    title: 'Mode sombre',
-                    subtitle: 'Bientôt disponible',
-                    trailing: _ComingSoonBadge(),
-                  ),
-                  _SettingsTile(
-                    icon: Icons.language_rounded,
-                    title: 'Langue',
-                    subtitle: 'Français',
-                    trailing: Icon(
-                      Icons.arrow_forward_ios_rounded,
-                      size: 16,
-                      color: AppTheme.greyTextColor,
-                    ),
+                  Consumer(
+                    builder: (context, ref, child) {
+                      final themeModeAsync = ref.watch(themeModeProvider);
+                      final themeMode = themeModeAsync.value ?? ThemeMode.light;
+                      final isDark = themeMode == ThemeMode.dark;
+
+                      return _SettingsTile(
+                        icon: Icons.dark_mode_rounded,
+                        title: 'Mode sombre',
+                        subtitle: isDark ? 'Activé' : 'Désactivé',
+                        trailing: Switch(
+                          value: isDark,
+                          activeColor: AppTheme.primaryColor,
+                          onChanged: (value) {
+                            ref
+                                .read(themeModeProvider.notifier)
+                                .toggleTheme(value);
+                          },
+                        ),
+                      );
+                    },
                   ),
                   _SettingsTile(
                     icon: Icons.notifications_rounded,
@@ -56,8 +65,52 @@ class SettingsPage extends ConsumerWidget {
                     trailing: Icon(
                       Icons.arrow_forward_ios_rounded,
                       size: 16,
-                      color: AppTheme.greyTextColor,
+                      color: AppTheme.secondaryTextColor(context),
                     ),
+                    onTap: () {
+                      showModalBottomSheet(
+                        context: context,
+                        backgroundColor: AppTheme.cardColor(context),
+                        shape: const RoundedRectangleBorder(
+                          borderRadius: BorderRadius.vertical(
+                            top: Radius.circular(24),
+                          ),
+                        ),
+                        builder: (_) {
+                          return Padding(
+                            padding: const EdgeInsets.all(24),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.notifications_active_rounded,
+                                  size: 46,
+                                  color: AppTheme.primaryColor,
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'Notifications bientôt disponibles',
+                                  style: TextStyle(
+                                    color: AppTheme.mainTextColor(context),
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
+                                Text(
+                                  'Vous recevrez bientôt des rappels pour vos tâches et projets.',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: AppTheme.secondaryTextColor(context),
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      );
+                    },
                   ),
                 ],
               ),
@@ -91,10 +144,10 @@ class SettingsPage extends ConsumerWidget {
                     icon: Icons.restart_alt_rounded,
                     title: 'Réinitialiser la démo',
                     subtitle: 'Restaurer les données de départ',
-                    trailing: const Icon(
+                    trailing: Icon(
                       Icons.arrow_forward_ios_rounded,
                       size: 16,
-                      color: AppTheme.greyTextColor,
+                      color: AppTheme.secondaryTextColor(context),
                     ),
                     onTap: () async {
                       await ref
@@ -122,16 +175,23 @@ class SettingsPage extends ConsumerWidget {
               Text('Compte', style: Theme.of(context).textTheme.titleLarge),
               const SizedBox(height: 14),
               _LogoutButton(
-                onTap: () {
+                onTap: () async {
+                  await ref.read(authServiceProvider).logout();
+
+                  ref.invalidate(clientControllerProvider);
+                  ref.invalidate(projectControllerProvider);
+                  ref.invalidate(taskControllerProvider);
+
+                  if (!context.mounted) return;
                   context.go('/login');
                 },
               ),
               const SizedBox(height: 24),
-              const Center(
+              Center(
                 child: Text(
                   'ClientFlow Pro • Version 1.0.0',
                   style: TextStyle(
-                    color: AppTheme.greyTextColor,
+                    color: AppTheme.secondaryTextColor(context),
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                   ),
@@ -145,21 +205,21 @@ class SettingsPage extends ConsumerWidget {
   }
 }
 
-class _SettingsHeader extends StatelessWidget {
+class _SettingsHeader extends ConsumerWidget {
   const _SettingsHeader();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Row(
       children: [
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Configuration',
                 style: TextStyle(
-                  color: AppTheme.greyTextColor,
+                  color: AppTheme.secondaryTextColor(context),
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
                 ),
@@ -172,17 +232,67 @@ class _SettingsHeader extends StatelessWidget {
             ],
           ),
         ),
-        Container(
-          width: 48,
-          height: 48,
-          decoration: BoxDecoration(
-            color: Colors.white,
+        PopupMenuButton<String>(
+          color: AppTheme.cardColor(context),
+          shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
           ),
-          child: const Icon(
-            Icons.settings_rounded,
-            color: AppTheme.darkTextColor,
+          onSelected: (value) async {
+            if (value == 'logout') {
+              await ref.read(authServiceProvider).logout();
+
+              ref.invalidate(clientControllerProvider);
+              ref.invalidate(projectControllerProvider);
+              ref.invalidate(taskControllerProvider);
+              ref.invalidate(themeModeProvider);
+
+              if (!context.mounted) return;
+
+              context.go('/login');
+            }
+
+            if (value == 'about') {
+              showAboutDialog(
+                context: context,
+                applicationName: 'ClientFlow Pro',
+                applicationVersion: '1.0.0',
+              );
+            }
+          },
+          itemBuilder: (context) => [
+            PopupMenuItem(
+              value: 'about',
+              child: Text(
+                'À propos',
+                style: TextStyle(
+                  color: AppTheme.mainTextColor(context),
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            const PopupMenuItem(
+              value: 'logout',
+              child: Text(
+                'Déconnexion',
+                style: TextStyle(
+                  color: Color(0xFFDC2626),
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+          child: Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: AppTheme.cardColor(context),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppTheme.borderColor(context)),
+            ),
+            child: Icon(
+              Icons.settings_rounded,
+              color: AppTheme.mainTextColor(context),
+            ),
           ),
         ),
       ],
@@ -191,7 +301,9 @@ class _SettingsHeader extends StatelessWidget {
 }
 
 class _ProfileCard extends StatelessWidget {
-  const _ProfileCard();
+  const _ProfileCard({required this.email});
+
+  final String email;
 
   @override
   Widget build(BuildContext context) {
@@ -202,11 +314,12 @@ class _ProfileCard extends StatelessWidget {
         color: AppTheme.primaryColor,
         borderRadius: BorderRadius.circular(28),
         boxShadow: [
-          BoxShadow(
-            color: AppTheme.primaryColor.withOpacity(0.22),
-            blurRadius: 24,
-            offset: const Offset(0, 14),
-          ),
+          if (!AppTheme.isDark(context))
+            BoxShadow(
+              color: AppTheme.primaryColor.withOpacity(0.22),
+              blurRadius: 24,
+              offset: const Offset(0, 14),
+            ),
         ],
       ),
       child: Row(
@@ -215,7 +328,7 @@ class _ProfileCard extends StatelessWidget {
             width: 64,
             height: 64,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.18),
+              color: Colors.black.withOpacity(0.12),
               borderRadius: BorderRadius.circular(22),
             ),
             child: const Icon(
@@ -230,7 +343,7 @@ class _ProfileCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Freelance Web',
+                  'Compte connecté',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 20,
@@ -239,9 +352,9 @@ class _ProfileCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'WordPress • Flutter • Design',
+                  email,
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.86),
+                    color: Colors.white.withOpacity(0.88),
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                   ),
@@ -253,7 +366,7 @@ class _ProfileCard extends StatelessWidget {
                     vertical: 7,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.16),
+                    color: Colors.black.withOpacity(0.12),
                     borderRadius: BorderRadius.circular(100),
                   ),
                   child: const Text(
@@ -283,9 +396,8 @@ class _SettingsSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.cardColor(context),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
       child: Column(
         children: children
@@ -296,7 +408,10 @@ class _SettingsSection extends StatelessWidget {
                 children: [
                   entry.value,
                   if (entry.key != children.length - 1)
-                    const Divider(height: 1, color: Color(0xFFE2E8F0)),
+                    Divider(
+                      height: 1,
+                      color: AppTheme.borderColor(context).withOpacity(0.45),
+                    ),
                 ],
               ),
             )
@@ -323,48 +438,52 @@ class _SettingsTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: AppTheme.primaryColor.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(14),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryColor.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(icon, color: AppTheme.primaryColor, size: 21),
               ),
-              child: Icon(icon, color: AppTheme.primaryColor, size: 21),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      color: AppTheme.darkTextColor,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w900,
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        color: AppTheme.mainTextColor(context),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    style: const TextStyle(
-                      color: AppTheme.greyTextColor,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        color: AppTheme.secondaryTextColor(context),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            trailing,
-          ],
+              trailing,
+            ],
+          ),
         ),
       ),
     );
@@ -379,7 +498,7 @@ class _ComingSoonBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
       decoration: BoxDecoration(
-        color: const Color(0xFFEFF6FF),
+        color: AppTheme.primaryColor.withOpacity(0.12),
         borderRadius: BorderRadius.circular(100),
       ),
       child: const Text(
@@ -401,15 +520,19 @@ class _LogoutButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final borderColor = AppTheme.isDark(context)
+        ? const Color(0xFF7F1D1D).withOpacity(0.45)
+        : const Color(0xFFFEE2E2);
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppTheme.cardColor(context),
           borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: const Color(0xFFFEE2E2)),
+          border: Border.all(color: borderColor),
         ),
         child: const Row(
           children: [

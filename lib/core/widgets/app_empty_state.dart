@@ -21,12 +21,12 @@ class AppEmptyState extends StatelessWidget {
       padding: const EdgeInsets.all(28),
       child: Column(
         children: [
-          Icon(icon, size: 48, color: AppTheme.greyTextColor.withOpacity(0.8)),
+          Icon(icon, size: 48, color: AppTheme.secondaryTextColor(context).withOpacity(0.8)),
           const SizedBox(height: 16),
           Text(
             title,
-            style: const TextStyle(
-              color: AppTheme.darkTextColor,
+            style: TextStyle(
+              color: AppTheme.mainTextColor(context),
               fontSize: 16,
               fontWeight: FontWeight.w900,
             ),
@@ -35,8 +35,8 @@ class AppEmptyState extends StatelessWidget {
           Text(
             description,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: AppTheme.greyTextColor,
+            style: TextStyle(
+              color: AppTheme.secondaryTextColor(context),
               fontSize: 13,
               fontWeight: FontWeight.w600,
             ),

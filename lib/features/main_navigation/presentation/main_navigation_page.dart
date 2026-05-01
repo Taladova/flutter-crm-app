@@ -34,7 +34,7 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
       ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppTheme.cardColor(context),
           border: const Border(
             top: BorderSide(
               color: Color(0xFFE2E8F0),
@@ -52,7 +52,7 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
           selectedIndex: currentIndex,
           height: 72,
           elevation: 0,
-          backgroundColor: Colors.white,
+          backgroundColor: AppTheme.cardColor(context),
           indicatorColor: AppTheme.primaryColor.withOpacity(0.12),
           labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
           onDestinationSelected: (index) {

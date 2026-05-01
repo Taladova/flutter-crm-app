@@ -4,17 +4,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/app_theme.dart';
-import '../../auth/providers/auth_providers.dart';
-import '../../auth/providers/auth_providers.dart';
+import '../providers/auth_providers.dart';
 
-class LoginPage extends ConsumerStatefulWidget {
-  const LoginPage({super.key});
+class RegisterPage extends ConsumerStatefulWidget {
+  const RegisterPage({super.key});
 
   @override
-  ConsumerState<LoginPage> createState() => _LoginPageState();
+  ConsumerState<RegisterPage> createState() => _RegisterPageState();
 }
 
-class _LoginPageState extends ConsumerState<LoginPage> {
+class _RegisterPageState extends ConsumerState<RegisterPage> {
+  final nameController = TextEditingController();
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
 
@@ -23,17 +23,24 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
   @override
   void dispose() {
+    nameController.dispose();
     emailController.dispose();
     passwordController.dispose();
     super.dispose();
   }
 
-  Future<void> login() async {
+  Future<void> register() async {
+    final name = nameController.text.trim();
     final email = emailController.text.trim();
     final password = passwordController.text.trim();
 
-    if (email.isEmpty || password.isEmpty) {
+    if (name.isEmpty || email.isEmpty || password.isEmpty) {
       showMessage('Merci de remplir tous les champs.');
+      return;
+    }
+
+    if (password.length < 6) {
+      showMessage('Le mot de passe doit contenir au moins 6 caractères.');
       return;
     }
 
@@ -42,9 +49,20 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     });
 
     try {
-      await ref.read(authServiceProvider).login(email, password);
+      await ref
+          .read(authServiceProvider)
+          .register(
+            name: nameController.text.trim(),
+            email: email,
+            password: password,
+          );
 
       if (!mounted) return;
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Compte créé avec succès.')));
+
       context.go('/main');
     } on FirebaseAuthException catch (error) {
       showMessage(getFirebaseErrorMessage(error.code));
@@ -61,23 +79,21 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
   String getFirebaseErrorMessage(String code) {
     switch (code) {
-      case 'user-not-found':
-        return 'Aucun compte trouvé avec cet email.';
-      case 'wrong-password':
-        return 'Mot de passe incorrect.';
+      case 'email-already-in-use':
+        return 'Cet email est déjà utilisé.';
       case 'invalid-email':
         return 'Adresse email invalide.';
-      case 'invalid-credential':
-        return 'Email ou mot de passe incorrect.';
+      case 'weak-password':
+        return 'Mot de passe trop faible.';
       default:
-        return 'Impossible de se connecter.';
+        return 'Impossible de créer le compte.';
     }
   }
 
   void showMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -94,7 +110,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
               const SizedBox(height: 42),
               _buildForm(),
               const SizedBox(height: 28),
-              _buildLoginButton(),
+              _buildRegisterButton(),
               const SizedBox(height: 22),
               _buildFooter(),
             ],
@@ -108,38 +124,33 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          width: 62,
-          height: 62,
-          decoration: BoxDecoration(
-            color: AppTheme.primaryColor,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: AppTheme.primaryColor.withOpacity(0.28),
-                blurRadius: 24,
-                offset: const Offset(0, 14),
-              ),
-            ],
-          ),
-          child: Icon(
-            Icons.business_center_rounded,
-            color: AppTheme.cardColor(context),
-            size: 30,
+        GestureDetector(
+          onTap: () => context.pop(),
+          child: Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: AppTheme.cardColor(context),
+              borderRadius: BorderRadius.circular(15),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+            ),
+            child: Icon(
+              Icons.arrow_back_rounded,
+              color: AppTheme.mainTextColor(context),
+            ),
           ),
         ),
         const SizedBox(height: 32),
         Text(
-          'Bon retour 👋',
+          'Créer un compte',
           style: Theme.of(context).textTheme.headlineLarge,
         ),
         const SizedBox(height: 12),
         Text(
-          'Connectez-vous pour gérer vos clients, vos projets et suivre votre activité.',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                height: 1.5,
-                fontSize: 15,
-              ),
+          'Créez votre espace pour gérer vos clients, projets et tâches.',
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(height: 1.5, fontSize: 15),
         ),
       ],
     );
@@ -148,6 +159,13 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   Widget _buildForm() {
     return Column(
       children: [
+        _InputField(
+          controller: nameController,
+          label: 'Nom complet',
+          hint: 'Votre nom',
+          icon: Icons.person_rounded,
+        ),
+        const SizedBox(height: 18),
         _InputField(
           controller: emailController,
           label: 'Adresse email',
@@ -159,7 +177,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
         _InputField(
           controller: passwordController,
           label: 'Mot de passe',
-          hint: 'Votre mot de passe',
+          hint: 'Minimum 6 caractères',
           icon: Icons.lock_rounded,
           obscureText: !isPasswordVisible,
           suffixIcon: IconButton(
@@ -180,12 +198,12 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     );
   }
 
-  Widget _buildLoginButton() {
+  Widget _buildRegisterButton() {
     return SizedBox(
       width: double.infinity,
       height: 58,
       child: ElevatedButton(
-        onPressed: isLoading ? null : login,
+        onPressed: isLoading ? null : register,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppTheme.primaryColor,
           foregroundColor: AppTheme.cardColor(context),
@@ -197,11 +215,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
         child: isLoading
             ? CircularProgressIndicator(color: AppTheme.cardColor(context))
             : const Text(
-                'Se connecter',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w800,
-                ),
+                'Créer mon compte',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
               ),
       ),
     );
@@ -213,7 +228,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
         alignment: WrapAlignment.center,
         children: [
           Text(
-            'Vous n’avez pas encore de compte ? ',
+            'Vous avez déjà un compte ? ',
             style: TextStyle(
               color: AppTheme.secondaryTextColor(context),
               fontWeight: FontWeight.w500,
@@ -221,10 +236,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
           ),
           GestureDetector(
             onTap: () {
-              context.push('/register');
+              context.pop();
             },
             child: const Text(
-              'Créer un compte',
+              'Se connecter',
               style: TextStyle(
                 color: AppTheme.primaryColor,
                 fontWeight: FontWeight.w800,
@@ -276,10 +291,7 @@ class _InputField extends StatelessWidget {
           keyboardType: keyboardType,
           decoration: InputDecoration(
             hintText: hint,
-            prefixIcon: Icon(
-              icon,
-              color: AppTheme.secondaryTextColor(context),
-            ),
+            prefixIcon: Icon(icon, color: AppTheme.secondaryTextColor(context)),
             suffixIcon: suffixIcon,
             filled: true,
             fillColor: AppTheme.cardColor(context),
@@ -293,15 +305,11 @@ class _InputField extends StatelessWidget {
             ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(18),
-              borderSide: const BorderSide(
-                color: Color(0xFFE2E8F0),
-              ),
+              borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(18),
-              borderSide: const BorderSide(
-                color: Color(0xFFE2E8F0),
-              ),
+              borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(18),

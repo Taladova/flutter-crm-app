@@ -10,6 +10,7 @@ import '../features/projects/presentation/project_detail_page.dart';
 import '../features/clients/presentation/add_client_page.dart';
 import '../features/projects/presentation/add_project_page.dart';
 import '../features/tasks/presentation/add_task_page.dart';
+import '../features/auth/presentation/register_page.dart';
 
 CustomTransitionPage<T> buildSlideTransitionPage<T>({
   required GoRouterState state,
@@ -124,6 +125,16 @@ class AppRouter {
           return buildSlideTransitionPage(
             state: state,
             child: AddTaskPage(projectId: projectId, projectName: projectName),
+          );
+        },
+      ),
+      GoRoute(
+        path: '/register',
+        name: 'register',
+        pageBuilder: (context, state) {
+          return buildSlideTransitionPage(
+            state: state,
+            child: const RegisterPage(),
           );
         },
       ),

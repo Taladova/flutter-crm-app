@@ -38,14 +38,20 @@ class _TasksPageState extends ConsumerState<TasksPage> {
     final tasksAsync = ref.watch(taskControllerProvider);
 
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: AppTheme.pageBackground(context),
       body: SafeArea(
         child: tasksAsync.when(
           loading: () => const Center(
             child: CircularProgressIndicator(),
           ),
-          error: (error, stackTrace) => const Center(
-            child: Text('Erreur de chargement des tâches'),
+          error: (error, stackTrace) => Center(
+            child: Text(
+              'Erreur de chargement des tâches',
+              style: TextStyle(
+                color: AppTheme.mainTextColor(context),
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ),
           data: (tasks) {
             final filteredTasks = filterTasks(tasks);
@@ -126,10 +132,10 @@ class _TasksHeader extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Organisation',
                 style: TextStyle(
-                  color: AppTheme.greyTextColor,
+                  color: AppTheme.secondaryTextColor(context),
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
                 ),
@@ -153,11 +159,12 @@ class _TasksHeader extends StatelessWidget {
               color: AppTheme.primaryColor,
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
-                BoxShadow(
-                  color: AppTheme.primaryColor.withOpacity(0.25),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
-                ),
+                if (!AppTheme.isDark(context))
+                  BoxShadow(
+                    color: AppTheme.primaryColor.withOpacity(0.22),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  ),
               ],
             ),
             child: const Icon(
@@ -192,11 +199,12 @@ class _TasksSummaryCard extends StatelessWidget {
         color: AppTheme.primaryColor,
         borderRadius: BorderRadius.circular(26),
         boxShadow: [
-          BoxShadow(
-            color: AppTheme.primaryColor.withOpacity(0.22),
-            blurRadius: 24,
-            offset: const Offset(0, 14),
-          ),
+          if (!AppTheme.isDark(context))
+            BoxShadow(
+              color: AppTheme.primaryColor.withOpacity(0.22),
+              blurRadius: 24,
+              offset: const Offset(0, 14),
+            ),
         ],
       ),
       child: Row(
@@ -205,7 +213,7 @@ class _TasksSummaryCard extends StatelessWidget {
             width: 54,
             height: 54,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.18),
+              color: Colors.black.withOpacity(0.12),
               borderRadius: BorderRadius.circular(18),
             ),
             child: const Icon(
@@ -242,7 +250,7 @@ class _TasksSummaryCard extends StatelessWidget {
                   child: LinearProgressIndicator(
                     value: progress,
                     minHeight: 9,
-                    backgroundColor: Colors.white.withOpacity(0.22),
+                    backgroundColor: Colors.black.withOpacity(0.16),
                     color: Colors.white,
                   ),
                 ),
@@ -284,19 +292,23 @@ class _FilterChips extends StatelessWidget {
               duration: const Duration(milliseconds: 220),
               padding: const EdgeInsets.symmetric(horizontal: 18),
               decoration: BoxDecoration(
-                color: isSelected ? AppTheme.primaryColor : Colors.white,
+                color: isSelected
+                    ? AppTheme.primaryColor
+                    : AppTheme.cardColor(context),
                 borderRadius: BorderRadius.circular(100),
                 border: Border.all(
                   color: isSelected
                       ? AppTheme.primaryColor
-                      : const Color(0xFFE2E8F0),
+                      : AppTheme.borderColor(context),
                 ),
               ),
               child: Center(
                 child: Text(
                   filter,
                   style: TextStyle(
-                    color: isSelected ? Colors.white : AppTheme.greyTextColor,
+                    color: isSelected
+                        ? Colors.white
+                        : AppTheme.secondaryTextColor(context),
                     fontSize: 13,
                     fontWeight: FontWeight.w800,
                   ),
@@ -338,7 +350,7 @@ class _TaskCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: isDone
                       ? const Color(0xFFDCFCE7)
-                      : AppTheme.primaryColor.withOpacity(0.1),
+                      : AppTheme.primaryColor.withOpacity(0.14),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Icon(
@@ -355,7 +367,7 @@ class _TaskCard extends StatelessWidget {
                     Text(
                       task.title,
                       style: TextStyle(
-                        color: AppTheme.darkTextColor,
+                        color: AppTheme.mainTextColor(context),
                         fontSize: 15,
                         fontWeight: FontWeight.w900,
                         decoration: isDone
@@ -366,8 +378,8 @@ class _TaskCard extends StatelessWidget {
                     const SizedBox(height: 6),
                     Text(
                       task.projectName,
-                      style: const TextStyle(
-                        color: AppTheme.greyTextColor,
+                      style: TextStyle(
+                        color: AppTheme.secondaryTextColor(context),
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                       ),
@@ -393,16 +405,16 @@ class _TaskCard extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.event_rounded,
                     size: 18,
-                    color: AppTheme.greyTextColor,
+                    color: AppTheme.secondaryTextColor(context),
                   ),
                   const SizedBox(height: 6),
                   Text(
                     task.deadline,
-                    style: const TextStyle(
-                      color: AppTheme.greyTextColor,
+                    style: TextStyle(
+                      color: AppTheme.secondaryTextColor(context),
                       fontSize: 12,
                       fontWeight: FontWeight.w800,
                     ),
@@ -442,7 +454,7 @@ class _MiniBadge extends StatelessWidget {
           textColor = const Color(0xFFD97706);
           break;
         default:
-          backgroundColor = const Color(0xFFEFF6FF);
+          backgroundColor = AppTheme.primaryColor.withOpacity(0.14);
           textColor = AppTheme.primaryColor;
       }
     } else {
@@ -452,12 +464,14 @@ class _MiniBadge extends StatelessWidget {
           textColor = const Color(0xFF16A34A);
           break;
         case 'En cours':
-          backgroundColor = const Color(0xFFEFF6FF);
+          backgroundColor = AppTheme.primaryColor.withOpacity(0.14);
           textColor = AppTheme.primaryColor;
           break;
         default:
-          backgroundColor = const Color(0xFFF1F5F9);
-          textColor = AppTheme.greyTextColor;
+          backgroundColor = AppTheme.isDark(context)
+              ? const Color(0xFF000B27)
+              : const Color(0xFFF1F5F9);
+          textColor = AppTheme.secondaryTextColor(context);
       }
     }
 
@@ -466,6 +480,11 @@ class _MiniBadge extends StatelessWidget {
       decoration: BoxDecoration(
         color: backgroundColor,
         borderRadius: BorderRadius.circular(100),
+        border: Border.all(
+          color: AppTheme.isDark(context)
+              ? AppTheme.borderColor(context).withOpacity(0.45)
+              : Colors.transparent,
+        ),
       ),
       child: Text(
         label,

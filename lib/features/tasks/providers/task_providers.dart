@@ -1,29 +1,33 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../data/models/task_model.dart';
+import '../../../data/providers/firestore_providers.dart';
 import '../../../data/repositories/task_repository.dart';
 
 final taskRepositoryProvider = Provider<TaskRepository>((ref) {
-  return const TaskRepository();
+  return TaskRepository(
+    firestoreService: ref.watch(firestoreServiceProvider),
+  );
 });
 
 final taskControllerProvider =
-    AsyncNotifierProvider<TaskController, List<TaskModel>>(TaskController.new);
+    AsyncNotifierProvider<TaskController, List<TaskModel>>(
+  TaskController.new,
+);
 
-final tasksByProjectProvider = Provider.family<List<TaskModel>, String>((
-  ref,
-  projectId,
-) {
-  final tasksState = ref.watch(taskControllerProvider);
+final tasksByProjectProvider = Provider.family<List<TaskModel>, String>(
+  (ref, projectId) {
+    final tasksState = ref.watch(taskControllerProvider);
 
-  return tasksState.when(
-    data: (tasks) {
-      return tasks.where((task) => task.projectId == projectId).toList();
-    },
-    loading: () => [],
-    error: (_, __) => [],
-  );
-});
+    return tasksState.when(
+      data: (tasks) {
+        return tasks.where((task) => task.projectId == projectId).toList();
+      },
+      loading: () => [],
+      error: (_, __) => [],
+    );
+  },
+);
 
 class TaskController extends AsyncNotifier<List<TaskModel>> {
   @override
@@ -34,12 +38,11 @@ class TaskController extends AsyncNotifier<List<TaskModel>> {
 
   Future<void> addTask(TaskModel task) async {
     final currentTasks = state.value ?? [];
-
     final updatedTasks = [task, ...currentTasks];
 
     state = AsyncValue.data(updatedTasks);
 
-    await ref.read(taskRepositoryProvider).saveTasks(updatedTasks);
+    await ref.read(taskRepositoryProvider).addTask(task);
   }
 
   Future<void> toggleTaskStatus(TaskModel selectedTask) async {
@@ -49,7 +52,9 @@ class TaskController extends AsyncNotifier<List<TaskModel>> {
       if (task.id == selectedTask.id) {
         final isDone = task.status == 'Terminé';
 
-        return task.copyWith(status: isDone ? 'À faire' : 'Terminé');
+        return task.copyWith(
+          status: isDone ? 'À faire' : 'Terminé',
+        );
       }
 
       return task;
@@ -57,15 +62,15 @@ class TaskController extends AsyncNotifier<List<TaskModel>> {
 
     state = AsyncValue.data(updatedTasks);
 
-    await ref.read(taskRepositoryProvider).saveTasks(updatedTasks);
+    final updatedTask = updatedTasks.firstWhere(
+      (task) => task.id == selectedTask.id,
+    );
+
+    await ref.read(taskRepositoryProvider).updateTask(updatedTask);
   }
 
   Future<void> resetTasks() async {
-    final repository = ref.read(taskRepositoryProvider);
-
-    await repository.resetTasks();
-
-    final tasks = await repository.getTasks();
-    state = AsyncValue.data(tasks);
+    await ref.read(taskRepositoryProvider).resetTasks();
+    state = const AsyncValue.data([]);
   }
 }

@@ -1,54 +1,63 @@
-import 'dart:convert';
-
-import 'package:shared_preferences/shared_preferences.dart';
-
-import '../mock/mock_clients.dart';
 import '../models/client_model.dart';
+import '../services/firestore_service.dart';
+import '../mock/mock_clients.dart';
 
 class ClientRepository {
-  const ClientRepository();
+  const ClientRepository({required this.firestoreService});
 
-  static const String _clientsKey = 'clients';
+  final FirestoreService firestoreService;
 
   Future<List<ClientModel>> getClients() async {
-    await Future.delayed(const Duration(milliseconds: 400));
+    final snapshot = await firestoreService.userCollection('clients').get();
 
-    final prefs = await SharedPreferences.getInstance();
-    final clientsString = prefs.getString(_clientsKey);
-
-    if (clientsString == null) {
-      await saveClients(mockClients);
-      return mockClients;
-    }
-
-    final List<dynamic> decoded = jsonDecode(clientsString);
-
-    return decoded
-        .map((item) => ClientModel.fromJson(item as Map<String, dynamic>))
-        .toList();
+    return snapshot.docs.map((doc) {
+      return ClientModel.fromJson(doc.data());
+    }).toList();
   }
 
   Future<void> saveClients(List<ClientModel> clients) async {
-    final prefs = await SharedPreferences.getInstance();
+    final batch = firestoreService.firestore.batch();
+    final collection = firestoreService.userCollection('clients');
 
-    final encoded = jsonEncode(
-      clients.map((client) => client.toJson()).toList(),
-    );
+    for (final client in clients) {
+      final docRef = collection.doc(client.id);
+      batch.set(docRef, client.toJson());
+    }
 
-    await prefs.setString(_clientsKey, encoded);
+    await batch.commit();
+  }
+
+  Future<void> addClient(ClientModel client) async {
+    await firestoreService
+        .userCollection('clients')
+        .doc(client.id)
+        .set(client.toJson());
   }
 
   Future<ClientModel?> getClientById(String id) async {
-    final clients = await getClients();
+    final doc = await firestoreService.userCollection('clients').doc(id).get();
 
-    try {
-      return clients.firstWhere((client) => client.id == id);
-    } catch (_) {
+    if (!doc.exists || doc.data() == null) {
       return null;
     }
+
+    return ClientModel.fromJson(doc.data()!);
   }
 
   Future<void> resetClients() async {
-    await saveClients(mockClients);
+    final collection = firestoreService.userCollection('clients');
+    final snapshot = await collection.get();
+
+    final batch = firestoreService.firestore.batch();
+
+    for (final doc in snapshot.docs) {
+      batch.delete(doc.reference);
+    }
+
+    for (final client in mockClients) {
+      batch.set(collection.doc(client.id), client.toJson());
+    }
+
+    await batch.commit();
   }
 }

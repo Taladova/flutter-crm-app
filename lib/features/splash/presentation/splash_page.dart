@@ -39,7 +39,7 @@ class _SplashPageState extends State<SplashPage> {
                   width: 96,
                   height: 96,
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: AppTheme.cardColor(context),
                     borderRadius: BorderRadius.circular(28),
                     boxShadow: [
                       BoxShadow(
@@ -57,11 +57,11 @@ class _SplashPageState extends State<SplashPage> {
                   ),
                 ),
                 const SizedBox(height: 28),
-                const Text(
+                Text(
                   'ClientFlow Pro',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: Colors.white,
+                    color: AppTheme.cardColor(context),
                     fontSize: 34,
                     fontWeight: FontWeight.w800,
                     letterSpacing: -0.5,
@@ -73,7 +73,7 @@ class _SplashPageState extends State<SplashPage> {
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     // ignore: deprecated_member_use
-                    color: Colors.white.withOpacity(0.85),
+                    color: AppTheme.cardColor(context).withOpacity(0.85),
                     fontSize: 16,
                     height: 1.5,
                     fontWeight: FontWeight.w500,
@@ -87,7 +87,7 @@ class _SplashPageState extends State<SplashPage> {
                     strokeWidth: 3,
                     valueColor: AlwaysStoppedAnimation<Color>(
                       // ignore: deprecated_member_use
-                      Colors.white.withOpacity(0.9),
+                      AppTheme.cardColor(context).withOpacity(0.9),
                     ),
                   ),
                 ),

@@ -1,18 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/app_theme.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/app_empty_state.dart';
+import '../../../core/widgets/app_fade_in.dart';
 import '../../../core/widgets/app_status_badge.dart';
 import '../../../core/widgets/section_title.dart';
-
 import '../../../data/models/project_model.dart';
-
-import '../../../core/widgets/app_fade_in.dart';
-
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import '../providers/project_providers.dart';
 
 class ProjectsPage extends ConsumerStatefulWidget {
@@ -42,8 +38,9 @@ class _ProjectsPageState extends ConsumerState<ProjectsPage> {
   @override
   Widget build(BuildContext context) {
     final projectsAsync = ref.watch(projectControllerProvider);
+
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: AppTheme.pageBackground(context),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
@@ -150,10 +147,10 @@ class _ProjectsHeader extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Suivi projets',
                 style: TextStyle(
-                  color: AppTheme.greyTextColor,
+                  color: AppTheme.secondaryTextColor(context),
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
                 ),
@@ -177,14 +174,18 @@ class _ProjectsHeader extends StatelessWidget {
               color: AppTheme.primaryColor,
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
-                BoxShadow(
-                  color: AppTheme.primaryColor.withOpacity(0.25),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
-                ),
+                if (!AppTheme.isDark(context))
+                  BoxShadow(
+                    color: AppTheme.primaryColor.withOpacity(0.22),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  ),
               ],
             ),
-            child: const Icon(Icons.add_rounded, color: Colors.white),
+            child: const Icon(
+              Icons.add_rounded,
+              color: Colors.white,
+            ),
           ),
         ),
       ],
@@ -199,16 +200,15 @@ class _ProjectSummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final activeProjects = projects
-        .where((project) => project.status == 'En cours')
-        .length;
+    final activeProjects =
+        projects.where((project) => project.status == 'En cours').length;
 
     final averageProgress = projects.isEmpty
         ? 0
         : (projects.map((project) => project.progress).reduce((a, b) => a + b) /
-                  projects.length *
-                  100)
-              .round();
+                projects.length *
+                100)
+            .round();
 
     return Container(
       width: double.infinity,
@@ -217,11 +217,12 @@ class _ProjectSummaryCard extends StatelessWidget {
         color: AppTheme.primaryColor,
         borderRadius: BorderRadius.circular(26),
         boxShadow: [
-          BoxShadow(
-            color: AppTheme.primaryColor.withOpacity(0.22),
-            blurRadius: 24,
-            offset: const Offset(0, 14),
-          ),
+          if (!AppTheme.isDark(context))
+            BoxShadow(
+              color: AppTheme.primaryColor.withOpacity(0.22),
+              blurRadius: 24,
+              offset: const Offset(0, 14),
+            ),
         ],
       ),
       child: Row(
@@ -230,7 +231,7 @@ class _ProjectSummaryCard extends StatelessWidget {
             width: 54,
             height: 54,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.18),
+              color: Colors.black.withOpacity(0.12),
               borderRadius: BorderRadius.circular(18),
             ),
             child: const Icon(
@@ -299,19 +300,23 @@ class _FilterChips extends StatelessWidget {
               duration: const Duration(milliseconds: 220),
               padding: const EdgeInsets.symmetric(horizontal: 18),
               decoration: BoxDecoration(
-                color: isSelected ? AppTheme.primaryColor : Colors.white,
+                color: isSelected
+                    ? AppTheme.primaryColor
+                    : AppTheme.cardColor(context),
                 borderRadius: BorderRadius.circular(100),
                 border: Border.all(
                   color: isSelected
                       ? AppTheme.primaryColor
-                      : const Color(0xFFE2E8F0),
+                      : AppTheme.borderColor(context),
                 ),
               ),
               child: Center(
                 child: Text(
                   filter,
                   style: TextStyle(
-                    color: isSelected ? Colors.white : AppTheme.greyTextColor,
+                    color: isSelected
+                        ? Colors.white
+                        : AppTheme.secondaryTextColor(context),
                     fontSize: 13,
                     fontWeight: FontWeight.w800,
                   ),
@@ -347,10 +352,10 @@ class _ProjectCard extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  const CircleAvatar(
+                  CircleAvatar(
                     radius: 24,
-                    backgroundColor: Color(0xFFEFF6FF),
-                    child: Icon(
+                    backgroundColor: AppTheme.primaryColor.withOpacity(0.14),
+                    child: const Icon(
                       Icons.language_rounded,
                       color: AppTheme.primaryColor,
                     ),
@@ -362,8 +367,8 @@ class _ProjectCard extends StatelessWidget {
                       children: [
                         Text(
                           project.title,
-                          style: const TextStyle(
-                            color: AppTheme.darkTextColor,
+                          style: TextStyle(
+                            color: AppTheme.mainTextColor(context),
                             fontSize: 15,
                             fontWeight: FontWeight.w900,
                           ),
@@ -371,8 +376,8 @@ class _ProjectCard extends StatelessWidget {
                         const SizedBox(height: 5),
                         Text(
                           '${project.clientName} • ${project.type}',
-                          style: const TextStyle(
-                            color: AppTheme.greyTextColor,
+                          style: TextStyle(
+                            color: AppTheme.secondaryTextColor(context),
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
                           ),
@@ -408,7 +413,8 @@ class _ProjectCard extends StatelessWidget {
                       child: LinearProgressIndicator(
                         value: project.progress,
                         minHeight: 8,
-                        backgroundColor: const Color(0xFFE2E8F0),
+                        backgroundColor:
+                            AppTheme.secondaryTextColor(context).withOpacity(0.16),
                         color: AppTheme.primaryColor,
                       ),
                     ),
@@ -416,8 +422,8 @@ class _ProjectCard extends StatelessWidget {
                   const SizedBox(width: 12),
                   Text(
                     '$percent%',
-                    style: const TextStyle(
-                      color: AppTheme.darkTextColor,
+                    style: TextStyle(
+                      color: AppTheme.mainTextColor(context),
                       fontSize: 13,
                       fontWeight: FontWeight.w900,
                     ),
@@ -433,7 +439,10 @@ class _ProjectCard extends StatelessWidget {
 }
 
 class _ProjectInfo extends StatelessWidget {
-  const _ProjectInfo({required this.icon, required this.label});
+  const _ProjectInfo({
+    required this.icon,
+    required this.label,
+  });
 
   final IconData icon;
   final String label;
@@ -443,14 +452,18 @@ class _ProjectInfo extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 17, color: AppTheme.greyTextColor),
+        Icon(
+          icon,
+          size: 17,
+          color: AppTheme.secondaryTextColor(context),
+        ),
         const SizedBox(width: 7),
         Flexible(
           child: Text(
             label,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: AppTheme.greyTextColor,
+            style: TextStyle(
+              color: AppTheme.secondaryTextColor(context),
               fontSize: 12,
               fontWeight: FontWeight.w700,
             ),

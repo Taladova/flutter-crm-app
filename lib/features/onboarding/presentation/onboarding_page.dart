@@ -57,7 +57,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
     final bool isLastPage = _currentIndex == _items.length - 1;
 
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: AppTheme.pageBackground(context),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
@@ -109,7 +109,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                   onPressed: _nextPage,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.primaryColor,
-                    foregroundColor: Colors.white,
+                    foregroundColor: AppTheme.cardColor(context),
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(18),
@@ -164,7 +164,7 @@ class _OnboardingSlide extends StatelessWidget {
                   ),
                 ],
               ),
-              child: Icon(item.icon, color: Colors.white, size: 52),
+              child: Icon(item.icon, color: AppTheme.cardColor(context), size: 52),
             ),
           ),
         ),

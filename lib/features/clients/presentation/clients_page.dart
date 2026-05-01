@@ -1,17 +1,14 @@
 import 'package:clientflow_pro/core/widgets/app_fade_in.dart';
 import 'package:flutter/material.dart';
-
-import '../../../data/models/client_model.dart';
-import '../../../app/app_theme.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../app/app_theme.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/app_empty_state.dart';
 import '../../../core/widgets/app_status_badge.dart';
 import '../../../core/widgets/section_title.dart';
-
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
+import '../../../data/models/client_model.dart';
 import '../providers/client_providers.dart';
 
 class ClientsPage extends ConsumerStatefulWidget {
@@ -23,7 +20,6 @@ class ClientsPage extends ConsumerStatefulWidget {
 
 class _ClientsPageState extends ConsumerState<ClientsPage> {
   final TextEditingController searchController = TextEditingController();
-
   String selectedFilter = 'Tous';
 
   final List<String> filters = const [
@@ -58,21 +54,20 @@ class _ClientsPageState extends ConsumerState<ClientsPage> {
   @override
   Widget build(BuildContext context) {
     final clientsAsync = ref.watch(clientControllerProvider);
+
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: AppTheme.pageBackground(context),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _ClientsHeader(),
+              const _ClientsHeader(),
               const SizedBox(height: 24),
               _SearchField(
                 controller: searchController,
-                onChanged: (_) {
-                  setState(() {});
-                },
+                onChanged: (_) => setState(() {}),
               ),
               const SizedBox(height: 18),
               _FilterChips(
@@ -136,6 +131,8 @@ class _ClientsPageState extends ConsumerState<ClientsPage> {
 }
 
 class _ClientsHeader extends StatelessWidget {
+  const _ClientsHeader();
+
   @override
   Widget build(BuildContext context) {
     return Row(
@@ -144,10 +141,10 @@ class _ClientsHeader extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Gestion clients',
                 style: TextStyle(
-                  color: AppTheme.greyTextColor,
+                  color: AppTheme.secondaryTextColor(context),
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
                 ),
@@ -172,13 +169,16 @@ class _ClientsHeader extends StatelessWidget {
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: AppTheme.primaryColor.withOpacity(0.25),
+                  color: AppTheme.primaryColor.withOpacity(0.22),
                   blurRadius: 20,
                   offset: const Offset(0, 10),
                 ),
               ],
             ),
-            child: const Icon(Icons.add_rounded, color: Colors.white),
+            child: const Icon(
+              Icons.add_rounded,
+              color: Colors.white,
+            ),
           ),
         ),
       ],
@@ -187,39 +187,54 @@ class _ClientsHeader extends StatelessWidget {
 }
 
 class _SearchField extends StatelessWidget {
-  const _SearchField({required this.controller, required this.onChanged});
+  const _SearchField({
+    required this.controller,
+    required this.onChanged,
+  });
 
   final TextEditingController controller;
   final ValueChanged<String> onChanged;
 
   @override
   Widget build(BuildContext context) {
+    final fieldColor = AppTheme.isDark(context)
+        ? const Color(0xFF000B27)
+        : AppTheme.cardColor(context);
+
     return TextField(
       controller: controller,
       onChanged: onChanged,
+      style: TextStyle(
+        color: AppTheme.mainTextColor(context),
+        fontWeight: FontWeight.w700,
+      ),
       decoration: InputDecoration(
         hintText: 'Rechercher un client...',
-        prefixIcon: const Icon(
+        prefixIcon: Icon(
           Icons.search_rounded,
-          color: AppTheme.greyTextColor,
+          color: AppTheme.secondaryTextColor(context),
         ),
         filled: true,
-        fillColor: Colors.white,
+        fillColor: fieldColor,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 18,
           vertical: 18,
         ),
-        hintStyle: const TextStyle(
-          color: AppTheme.greyTextColor,
+        hintStyle: TextStyle(
+          color: AppTheme.secondaryTextColor(context),
           fontWeight: FontWeight.w500,
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
-          borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+          borderSide: BorderSide(
+            color: AppTheme.borderColor(context),
+          ),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
-          borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+          borderSide: BorderSide(
+            color: AppTheme.borderColor(context),
+          ),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
@@ -257,26 +272,28 @@ class _FilterChips extends StatelessWidget {
           final isSelected = filter == selectedFilter;
 
           return GestureDetector(
-            onTap: () {
-              onFilterSelected(filter); // ✅ CORRECT
-            },
+            onTap: () => onFilterSelected(filter),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 220),
               padding: const EdgeInsets.symmetric(horizontal: 18),
               decoration: BoxDecoration(
-                color: isSelected ? AppTheme.primaryColor : Colors.white,
+                color: isSelected
+                    ? AppTheme.primaryColor
+                    : AppTheme.cardColor(context),
                 borderRadius: BorderRadius.circular(100),
                 border: Border.all(
                   color: isSelected
                       ? AppTheme.primaryColor
-                      : const Color(0xFFE2E8F0),
+                      : AppTheme.borderColor(context),
                 ),
               ),
               child: Center(
                 child: Text(
                   filter,
                   style: TextStyle(
-                    color: isSelected ? Colors.white : AppTheme.greyTextColor,
+                    color: isSelected
+                        ? Colors.white
+                        : AppTheme.secondaryTextColor(context),
                     fontSize: 13,
                     fontWeight: FontWeight.w800,
                   ),
@@ -312,7 +329,7 @@ class _ClientCard extends StatelessWidget {
                 children: [
                   CircleAvatar(
                     radius: 25,
-                    backgroundColor: AppTheme.primaryColor.withOpacity(0.1),
+                    backgroundColor: AppTheme.primaryColor.withOpacity(0.14),
                     child: Text(
                       client.name.substring(0, 1),
                       style: const TextStyle(
@@ -329,8 +346,8 @@ class _ClientCard extends StatelessWidget {
                       children: [
                         Text(
                           client.name,
-                          style: const TextStyle(
-                            color: AppTheme.darkTextColor,
+                          style: TextStyle(
+                            color: AppTheme.mainTextColor(context),
                             fontSize: 16,
                             fontWeight: FontWeight.w900,
                           ),
@@ -338,8 +355,8 @@ class _ClientCard extends StatelessWidget {
                         const SizedBox(height: 4),
                         Text(
                           client.company,
-                          style: const TextStyle(
-                            color: AppTheme.greyTextColor,
+                          style: TextStyle(
+                            color: AppTheme.secondaryTextColor(context),
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
                           ),
@@ -361,8 +378,13 @@ class _ClientCard extends StatelessWidget {
                   vertical: 12,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF8FAFC),
+                  color: AppTheme.isDark(context)
+                      ? const Color(0xFF000B27)
+                      : const Color(0xFFF8FAFC),
                   borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: AppTheme.borderColor(context),
+                  ),
                 ),
                 child: Row(
                   children: [
@@ -374,17 +396,17 @@ class _ClientCard extends StatelessWidget {
                     const SizedBox(width: 10),
                     Text(
                       '${client.projectsCount} projet(s) associé(s)',
-                      style: const TextStyle(
-                        color: AppTheme.darkTextColor,
+                      style: TextStyle(
+                        color: AppTheme.mainTextColor(context),
                         fontSize: 13,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
                     const Spacer(),
-                    const Icon(
+                    Icon(
                       Icons.arrow_forward_ios_rounded,
                       size: 14,
-                      color: AppTheme.greyTextColor,
+                      color: AppTheme.secondaryTextColor(context),
                     ),
                   ],
                 ),
@@ -398,7 +420,10 @@ class _ClientCard extends StatelessWidget {
 }
 
 class _InfoRow extends StatelessWidget {
-  const _InfoRow({required this.icon, required this.text});
+  const _InfoRow({
+    required this.icon,
+    required this.text,
+  });
 
   final IconData icon;
   final String text;
@@ -407,13 +432,17 @@ class _InfoRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, size: 18, color: AppTheme.greyTextColor),
+        Icon(
+          icon,
+          size: 18,
+          color: AppTheme.secondaryTextColor(context),
+        ),
         const SizedBox(width: 10),
         Expanded(
           child: Text(
             text,
-            style: const TextStyle(
-              color: AppTheme.greyTextColor,
+            style: TextStyle(
+              color: AppTheme.secondaryTextColor(context),
               fontSize: 13,
               fontWeight: FontWeight.w600,
             ),

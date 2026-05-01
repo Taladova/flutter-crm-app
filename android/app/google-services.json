@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "642138879979",
+    "project_id": "app-clientflow-pro",
+    "storage_bucket": "app-clientflow-pro.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:642138879979:android:b33f341d70cb0ce07c0bae",
+        "android_client_info": {
+          "package_name": "com.example.clientflow_pro"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCg43diGylbESS7W3tG8sdxdd71MRTgTH4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:642138879979:android:1ab89657f5275dda7c0bae",
+        "android_client_info": {
+          "package_name": "com.example.clientflowpro"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCg43diGylbESS7W3tG8sdxdd71MRTgTH4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

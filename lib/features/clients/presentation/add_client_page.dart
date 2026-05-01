@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/app_theme.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/section_title.dart';
-
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import '../../../data/models/client_model.dart';
 import '../providers/client_providers.dart';
 
@@ -19,6 +17,7 @@ class AddClientPage extends ConsumerStatefulWidget {
 
 class _AddClientPageState extends ConsumerState<AddClientPage> {
   final formKey = GlobalKey<FormState>();
+
   final nameController = TextEditingController();
   final companyController = TextEditingController();
   final emailController = TextEditingController();
@@ -26,7 +25,11 @@ class _AddClientPageState extends ConsumerState<AddClientPage> {
 
   String selectedStatus = 'Prospect';
 
-  final List<String> statuses = const ['Prospect', 'Actif', 'En attente'];
+  final List<String> statuses = const [
+    'Prospect',
+    'Actif',
+    'En attente',
+  ];
 
   @override
   void dispose() {
@@ -40,9 +43,7 @@ class _AddClientPageState extends ConsumerState<AddClientPage> {
   Future<void> submitForm() async {
     final isValid = formKey.currentState?.validate() ?? false;
 
-    if (!isValid) {
-      return;
-    }
+    if (!isValid) return;
 
     final newClient = ClientModel(
       id: 'client_${DateTime.now().millisecondsSinceEpoch}',
@@ -58,30 +59,34 @@ class _AddClientPageState extends ConsumerState<AddClientPage> {
 
     if (!mounted) return;
 
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Client ajouté avec succès.')));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Client ajouté avec succès.'),
+      ),
+    );
 
-    context.pop();
+    context.go('/clients');
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: AppTheme.pageBackground(context),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(20, 18, 20, 32),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _AddClientHeader(onBack: () => context.pop()),
-              const SizedBox(height: 24),
-              const SectionTitle(title: 'Informations client'),
-              const SizedBox(height: 14),
-              Form(
-                key: formKey,
-                child: AppCard(
+          child: Form(
+            key: formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _AddClientHeader(
+                  onBack: () => context.pop(),
+                ),
+                const SizedBox(height: 24),
+                const SectionTitle(title: 'Informations client'),
+                const SizedBox(height: 14),
+                AppCard(
                   child: Column(
                     children: [
                       _AppTextField(
@@ -145,40 +150,44 @@ class _AddClientPageState extends ConsumerState<AddClientPage> {
                     ],
                   ),
                 ),
-              ),
-              const SizedBox(height: 24),
-              const SectionTitle(title: 'Statut'),
-              const SizedBox(height: 14),
-              _StatusSelector(
-                statuses: statuses,
-                selectedStatus: selectedStatus,
-                onChanged: (status) {
-                  setState(() {
-                    selectedStatus = status;
-                  });
-                },
-              ),
-              const SizedBox(height: 32),
-              SizedBox(
-                width: double.infinity,
-                height: 58,
-                child: ElevatedButton(
-                  onPressed: submitForm,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primaryColor,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18),
+                const SizedBox(height: 24),
+                const SectionTitle(title: 'Statut'),
+                const SizedBox(height: 14),
+                _StatusSelector(
+                  statuses: statuses,
+                  selectedStatus: selectedStatus,
+                  onChanged: (status) {
+                    setState(() {
+                      selectedStatus = status;
+                    });
+                  },
+                ),
+                const SizedBox(height: 32),
+                SizedBox(
+                  width: double.infinity,
+                  height: 58,
+                  child: ElevatedButton(
+                    onPressed: submitForm,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.primaryColor,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                    ),
+                    child: const Text(
+                      'Ajouter le client',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
                   ),
-                  child: const Text(
-                    'Ajouter le client',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
-                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -187,7 +196,9 @@ class _AddClientPageState extends ConsumerState<AddClientPage> {
 }
 
 class _AddClientHeader extends StatelessWidget {
-  const _AddClientHeader({required this.onBack});
+  const _AddClientHeader({
+    required this.onBack,
+  });
 
   final VoidCallback onBack;
 
@@ -201,13 +212,15 @@ class _AddClientHeader extends StatelessWidget {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppTheme.cardColor(context),
               borderRadius: BorderRadius.circular(15),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
+              border: Border.all(
+                color: AppTheme.borderColor(context),
+              ),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.arrow_back_rounded,
-              color: AppTheme.darkTextColor,
+              color: AppTheme.mainTextColor(context),
             ),
           ),
         ),
@@ -242,13 +255,17 @@ class _AppTextField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final fieldColor = AppTheme.isDark(context)
+        ? const Color(0xFF000B27)
+        : const Color(0xFFF8FAFC);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: const TextStyle(
-            color: AppTheme.darkTextColor,
+          style: TextStyle(
+            color: AppTheme.mainTextColor(context),
             fontSize: 14,
             fontWeight: FontWeight.w900,
           ),
@@ -258,31 +275,59 @@ class _AppTextField extends StatelessWidget {
           validator: validator,
           controller: controller,
           keyboardType: keyboardType,
+          style: TextStyle(
+            color: AppTheme.mainTextColor(context),
+            fontWeight: FontWeight.w700,
+          ),
           decoration: InputDecoration(
             hintText: hint,
-            prefixIcon: Icon(icon, color: AppTheme.greyTextColor),
+            prefixIcon: Icon(
+              icon,
+              color: AppTheme.secondaryTextColor(context),
+            ),
             filled: true,
-            fillColor: const Color(0xFFF8FAFC),
+            fillColor: fieldColor,
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 18,
               vertical: 18,
             ),
-            hintStyle: const TextStyle(
-              color: AppTheme.greyTextColor,
+            hintStyle: TextStyle(
+              color: AppTheme.secondaryTextColor(context).withOpacity(0.7),
               fontWeight: FontWeight.w500,
+            ),
+            errorStyle: const TextStyle(
+              fontWeight: FontWeight.w700,
             ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(18),
-              borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+              borderSide: BorderSide(
+                color: AppTheme.borderColor(context),
+              ),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(18),
-              borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+              borderSide: BorderSide(
+                color: AppTheme.borderColor(context),
+              ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(18),
               borderSide: const BorderSide(
                 color: AppTheme.primaryColor,
+                width: 1.5,
+              ),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(18),
+              borderSide: const BorderSide(
+                color: Color(0xFFEF4444),
+                width: 1.2,
+              ),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(18),
+              borderSide: const BorderSide(
+                color: Color(0xFFEF4444),
                 width: 1.5,
               ),
             ),
@@ -308,38 +353,45 @@ class _StatusSelector extends StatelessWidget {
   Widget build(BuildContext context) {
     return AppCard(
       child: Row(
-        children: statuses
-            .map(
-              (status) => Expanded(
-                child: GestureDetector(
-                  onTap: () => onChanged(status),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 220),
-                    margin: const EdgeInsets.symmetric(horizontal: 4),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    decoration: BoxDecoration(
-                      color: selectedStatus == status
-                          ? AppTheme.primaryColor
+        children: statuses.map((status) {
+          final isSelected = selectedStatus == status;
+
+          return Expanded(
+            child: GestureDetector(
+              onTap: () => onChanged(status),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 220),
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? AppTheme.primaryColor
+                      : AppTheme.isDark(context)
+                          ? const Color(0xFF000B27)
                           : const Color(0xFFF8FAFC),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Center(
-                      child: Text(
-                        status,
-                        style: TextStyle(
-                          color: selectedStatus == status
-                              ? Colors.white
-                              : AppTheme.greyTextColor,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: isSelected
+                        ? AppTheme.primaryColor
+                        : AppTheme.borderColor(context),
+                  ),
+                ),
+                child: Center(
+                  child: Text(
+                    status,
+                    style: TextStyle(
+                      color: isSelected
+                          ? Colors.white
+                          : AppTheme.secondaryTextColor(context),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w900,
                     ),
                   ),
                 ),
               ),
-            )
-            .toList(),
+            ),
+          );
+        }).toList(),
       ),
     );
   }

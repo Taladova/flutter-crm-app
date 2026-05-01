@@ -1,17 +1,30 @@
-# clientflow_pro
+# 📱 ClientFlow Pro
 
-A new Flutter project.
+Application mobile Flutter pour la gestion de clients, projets et tâches.
 
-## Getting Started
+## 🚀 Fonctionnalités
 
-This project is a starting point for a Flutter application.
+- Gestion des clients
+- Suivi des projets
+- Gestion des tâches
+- Dashboard dynamique
+- Mode démo avec reset des données
 
-A few resources to get you started if this is your first Flutter project:
+## 🛠️ Tech Stack
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+- Flutter
+- Riverpod (state management)
+- GoRouter (navigation)
+- Architecture modulaire
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## 📸 Screenshots
+
+(ajoute ici tes images)
+
+## 📦 APK
+
+Télécharger : [Lien APK]
+
+## 🎯 Objectif
+
+Application conçue pour démontrer des compétences en développement mobile Flutter avec une architecture propre et scalable.
