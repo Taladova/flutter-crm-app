@@ -11,7 +11,6 @@ import '../../auth/providers/auth_providers.dart';
 import '../../clients/providers/client_providers.dart';
 import '../../projects/providers/project_providers.dart';
 import '../../tasks/providers/task_providers.dart';
-import '../../../data/providers/firestore_providers.dart';
 
 class DashboardPage extends ConsumerWidget {
   const DashboardPage({super.key});
@@ -246,12 +245,12 @@ class _StatCard extends StatelessWidget {
             : AppTheme.cardColor(context),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: AppTheme.borderColor(context).withOpacity(0.65),
+          color: AppTheme.borderColor(context).withValues(alpha: 0.65),
         ),
         boxShadow: [
           if (!AppTheme.isDark(context))
             BoxShadow(
-              color: Colors.black.withOpacity(0.035),
+              color: Colors.black.withValues(alpha: 0.035),
               blurRadius: 18,
               offset: const Offset(0, 10),
             ),
@@ -264,7 +263,7 @@ class _StatCard extends StatelessWidget {
             width: 42,
             height: 42,
             decoration: BoxDecoration(
-              color: AppTheme.primaryColor.withOpacity(0.14),
+              color: AppTheme.primaryColor.withValues(alpha: 0.14),
               borderRadius: BorderRadius.circular(15),
             ),
             child: Icon(stat.icon, color: AppTheme.primaryColor, size: 22),
@@ -344,7 +343,7 @@ class _ProjectCard extends StatelessWidget {
             children: [
               CircleAvatar(
                 radius: 22,
-                backgroundColor: AppTheme.primaryColor.withOpacity(0.14),
+                backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.14),
                 child: const Icon(
                   Icons.language_rounded,
                   color: AppTheme.primaryColor,
@@ -396,7 +395,7 @@ class _ProjectCard extends StatelessWidget {
                     minHeight: 8,
                     backgroundColor: AppTheme.secondaryTextColor(
                       context,
-                    ).withOpacity(0.16),
+                    ).withValues(alpha: 0.16),
                     color: AppTheme.primaryColor,
                   ),
                 ),
@@ -469,7 +468,7 @@ class _TaskTile extends StatelessWidget {
             width: 42,
             height: 42,
             decoration: BoxDecoration(
-              color: AppTheme.primaryColor.withOpacity(0.14),
+              color: AppTheme.primaryColor.withValues(alpha: 0.14),
               borderRadius: BorderRadius.circular(14),
             ),
             child: const Icon(
@@ -530,7 +529,7 @@ class _EmptyDashboardCard extends StatelessWidget {
         color: AppTheme.cardColor(context),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: AppTheme.borderColor(context).withOpacity(0.55),
+          color: AppTheme.borderColor(context).withValues(alpha: 0.55),
         ),
       ),
       child: Text(

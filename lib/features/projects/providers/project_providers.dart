@@ -28,7 +28,7 @@ final projectByIdProvider = Provider.family<ProjectModel?, String>(
         }
       },
       loading: () => null,
-      error: (_, __) => null,
+      error: (_, _) => null,
     );
   },
 );
@@ -49,8 +49,30 @@ class ProjectController extends AsyncNotifier<List<ProjectModel>> {
     await ref.read(projectRepositoryProvider).addProject(project);
   }
 
+  Future<void> updateProject(ProjectModel project) async {
+    final currentProjects = state.value ?? [];
+    final updatedProjects = currentProjects
+        .map((existing) => existing.id == project.id ? project : existing)
+        .toList();
+
+    state = AsyncValue.data(updatedProjects);
+
+    await ref.read(projectRepositoryProvider).updateProject(project);
+  }
+
+  Future<void> deleteProject(String id) async {
+    final currentProjects = state.value ?? [];
+    final updatedProjects =
+        currentProjects.where((project) => project.id != id).toList();
+
+    state = AsyncValue.data(updatedProjects);
+
+    await ref.read(projectRepositoryProvider).deleteProject(id);
+  }
+
   Future<void> resetProjects() async {
-    await ref.read(projectRepositoryProvider).resetProjects();
-    state = const AsyncValue.data([]);
+    final repository = ref.read(projectRepositoryProvider);
+    await repository.resetProjects();
+    state = AsyncValue.data(await repository.getProjects());
   }
 }

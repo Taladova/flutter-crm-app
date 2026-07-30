@@ -7,6 +7,7 @@ class ClientModel {
     required this.phone,
     required this.projectsCount,
     required this.status,
+    this.notes = '',
   });
 
   final String id;
@@ -16,6 +17,20 @@ class ClientModel {
   final String phone;
   final int projectsCount;
   final String status;
+  final String notes;
+
+  ClientModel copyWith({String? notes}) {
+    return ClientModel(
+      id: id,
+      name: name,
+      company: company,
+      email: email,
+      phone: phone,
+      projectsCount: projectsCount,
+      status: status,
+      notes: notes ?? this.notes,
+    );
+  }
 
   Map<String, dynamic> toJson() {
     return {
@@ -26,6 +41,7 @@ class ClientModel {
       'phone': phone,
       'projectsCount': projectsCount,
       'status': status,
+      'notes': notes,
     };
   }
 
@@ -38,6 +54,7 @@ class ClientModel {
       phone: json['phone'] ?? '',
       projectsCount: json['projectsCount'] ?? 0,
       status: json['status'] ?? 'Prospect',
+      notes: json['notes'] ?? '',
     );
   }
 }

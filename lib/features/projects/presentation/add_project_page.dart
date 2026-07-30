@@ -12,9 +12,13 @@ class AddProjectPage extends ConsumerStatefulWidget {
   const AddProjectPage({
     super.key,
     this.clientName,
+    this.projectId,
   });
 
   final String? clientName;
+  final String? projectId;
+
+  bool get isEditing => projectId != null;
 
   @override
   ConsumerState<AddProjectPage> createState() => _AddProjectPageState();
@@ -30,6 +34,7 @@ class _AddProjectPageState extends ConsumerState<AddProjectPage> {
   final deadlineController = TextEditingController();
 
   String selectedStatus = 'Planifié';
+  double? existingProgress;
 
   final List<String> statuses = const [
     'Planifié',
@@ -44,6 +49,20 @@ class _AddProjectPageState extends ConsumerState<AddProjectPage> {
 
     if (widget.clientName != null) {
       clientController.text = widget.clientName!;
+    }
+
+    if (widget.projectId != null) {
+      final project = ref.read(projectByIdProvider(widget.projectId!));
+
+      if (project != null) {
+        titleController.text = project.title;
+        clientController.text = project.clientName;
+        typeController.text = project.type;
+        budgetController.text = project.budget;
+        deadlineController.text = project.deadline;
+        selectedStatus = project.status;
+        existingProgress = project.progress;
+      }
     }
   }
 
@@ -62,28 +81,41 @@ class _AddProjectPageState extends ConsumerState<AddProjectPage> {
 
     if (!isValid) return;
 
-    final newProject = ProjectModel(
-      id: 'project_${DateTime.now().millisecondsSinceEpoch}',
+    final project = ProjectModel(
+      id: widget.projectId ?? 'project_${DateTime.now().millisecondsSinceEpoch}',
       title: titleController.text.trim(),
       clientName: clientController.text.trim(),
       type: typeController.text.trim(),
       status: selectedStatus,
       budget: budgetController.text.trim(),
       deadline: deadlineController.text.trim(),
-      progress: selectedStatus == 'En cours' ? 0.15 : 0.0,
+      progress: existingProgress ??
+          (selectedStatus == 'En cours' ? 0.15 : 0.0),
     );
 
-    await ref.read(projectControllerProvider.notifier).addProject(newProject);
+    if (widget.isEditing) {
+      await ref.read(projectControllerProvider.notifier).updateProject(project);
+    } else {
+      await ref.read(projectControllerProvider.notifier).addProject(project);
+    }
 
     if (!mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Projet ajouté avec succès.'),
+      SnackBar(
+        content: Text(
+          widget.isEditing
+              ? 'Projet mis à jour avec succès.'
+              : 'Projet ajouté avec succès.',
+        ),
       ),
     );
 
-    context.go('/projects');
+    if (widget.isEditing) {
+      context.pop();
+    } else {
+      context.go('/projects');
+    }
   }
 
   @override
@@ -100,6 +132,7 @@ class _AddProjectPageState extends ConsumerState<AddProjectPage> {
               children: [
                 _AddProjectHeader(
                   onBack: () => context.pop(),
+                  title: widget.isEditing ? 'Modifier le projet' : 'Nouveau projet',
                 ),
                 const SizedBox(height: 24),
                 const SectionTitle(title: 'Informations projet'),
@@ -201,9 +234,9 @@ class _AddProjectPageState extends ConsumerState<AddProjectPage> {
                         borderRadius: BorderRadius.circular(18),
                       ),
                     ),
-                    child: const Text(
-                      'Ajouter le projet',
-                      style: TextStyle(
+                    child: Text(
+                      widget.isEditing ? 'Enregistrer' : 'Ajouter le projet',
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 16,
                         fontWeight: FontWeight.w900,
@@ -223,9 +256,11 @@ class _AddProjectPageState extends ConsumerState<AddProjectPage> {
 class _AddProjectHeader extends StatelessWidget {
   const _AddProjectHeader({
     required this.onBack,
+    required this.title,
   });
 
   final VoidCallback onBack;
+  final String title;
 
   @override
   Widget build(BuildContext context) {
@@ -252,7 +287,7 @@ class _AddProjectHeader extends StatelessWidget {
         const SizedBox(width: 14),
         Expanded(
           child: Text(
-            'Nouveau projet',
+            title,
             style: Theme.of(context).textTheme.titleLarge,
           ),
         ),
@@ -317,7 +352,7 @@ class _AppTextField extends StatelessWidget {
               vertical: 18,
             ),
             hintStyle: TextStyle(
-              color: AppTheme.secondaryTextColor(context).withOpacity(0.7),
+              color: AppTheme.secondaryTextColor(context).withValues(alpha: 0.7),
               fontWeight: FontWeight.w500,
             ),
             errorStyle: const TextStyle(

@@ -8,6 +8,7 @@ class ProjectModel {
     required this.budget,
     required this.deadline,
     required this.progress,
+    this.notes = '',
   });
 
   final String id;
@@ -18,6 +19,21 @@ class ProjectModel {
   final String budget;
   final String deadline;
   final double progress;
+  final String notes;
+
+  ProjectModel copyWith({String? notes}) {
+    return ProjectModel(
+      id: id,
+      title: title,
+      clientName: clientName,
+      type: type,
+      status: status,
+      budget: budget,
+      deadline: deadline,
+      progress: progress,
+      notes: notes ?? this.notes,
+    );
+  }
 
   Map<String, dynamic> toJson() {
     return {
@@ -29,6 +45,7 @@ class ProjectModel {
       'budget': budget,
       'deadline': deadline,
       'progress': progress,
+      'notes': notes,
     };
   }
 
@@ -42,6 +59,7 @@ class ProjectModel {
       budget: json['budget'] ?? '',
       deadline: json['deadline'] ?? '',
       progress: (json['progress'] ?? 0.0).toDouble(),
+      notes: json['notes'] ?? '',
     );
   }
 }

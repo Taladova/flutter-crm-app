@@ -9,7 +9,11 @@ import '../../../data/models/client_model.dart';
 import '../providers/client_providers.dart';
 
 class AddClientPage extends ConsumerStatefulWidget {
-  const AddClientPage({super.key});
+  const AddClientPage({super.key, this.clientId});
+
+  final String? clientId;
+
+  bool get isEditing => clientId != null;
 
   @override
   ConsumerState<AddClientPage> createState() => _AddClientPageState();
@@ -24,12 +28,31 @@ class _AddClientPageState extends ConsumerState<AddClientPage> {
   final phoneController = TextEditingController();
 
   String selectedStatus = 'Prospect';
+  int existingProjectsCount = 0;
 
   final List<String> statuses = const [
     'Prospect',
     'Actif',
     'En attente',
   ];
+
+  @override
+  void initState() {
+    super.initState();
+
+    if (widget.clientId != null) {
+      final client = ref.read(clientByIdProvider(widget.clientId!));
+
+      if (client != null) {
+        nameController.text = client.name;
+        companyController.text = client.company;
+        emailController.text = client.email;
+        phoneController.text = client.phone;
+        selectedStatus = client.status;
+        existingProjectsCount = client.projectsCount;
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -45,27 +68,39 @@ class _AddClientPageState extends ConsumerState<AddClientPage> {
 
     if (!isValid) return;
 
-    final newClient = ClientModel(
-      id: 'client_${DateTime.now().millisecondsSinceEpoch}',
+    final client = ClientModel(
+      id: widget.clientId ?? 'client_${DateTime.now().millisecondsSinceEpoch}',
       name: nameController.text.trim(),
       company: companyController.text.trim(),
       email: emailController.text.trim(),
       phone: phoneController.text.trim(),
-      projectsCount: 0,
+      projectsCount: existingProjectsCount,
       status: selectedStatus,
     );
 
-    await ref.read(clientControllerProvider.notifier).addClient(newClient);
+    if (widget.isEditing) {
+      await ref.read(clientControllerProvider.notifier).updateClient(client);
+    } else {
+      await ref.read(clientControllerProvider.notifier).addClient(client);
+    }
 
     if (!mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Client ajouté avec succès.'),
+      SnackBar(
+        content: Text(
+          widget.isEditing
+              ? 'Client mis à jour avec succès.'
+              : 'Client ajouté avec succès.',
+        ),
       ),
     );
 
-    context.go('/clients');
+    if (widget.isEditing) {
+      context.pop();
+    } else {
+      context.go('/clients');
+    }
   }
 
   @override
@@ -82,6 +117,7 @@ class _AddClientPageState extends ConsumerState<AddClientPage> {
               children: [
                 _AddClientHeader(
                   onBack: () => context.pop(),
+                  title: widget.isEditing ? 'Modifier le client' : 'Nouveau client',
                 ),
                 const SizedBox(height: 24),
                 const SectionTitle(title: 'Informations client'),
@@ -176,9 +212,9 @@ class _AddClientPageState extends ConsumerState<AddClientPage> {
                         borderRadius: BorderRadius.circular(18),
                       ),
                     ),
-                    child: const Text(
-                      'Ajouter le client',
-                      style: TextStyle(
+                    child: Text(
+                      widget.isEditing ? 'Enregistrer' : 'Ajouter le client',
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 16,
                         fontWeight: FontWeight.w900,
@@ -198,9 +234,11 @@ class _AddClientPageState extends ConsumerState<AddClientPage> {
 class _AddClientHeader extends StatelessWidget {
   const _AddClientHeader({
     required this.onBack,
+    required this.title,
   });
 
   final VoidCallback onBack;
+  final String title;
 
   @override
   Widget build(BuildContext context) {
@@ -227,7 +265,7 @@ class _AddClientHeader extends StatelessWidget {
         const SizedBox(width: 14),
         Expanded(
           child: Text(
-            'Nouveau client',
+            title,
             style: Theme.of(context).textTheme.titleLarge,
           ),
         ),
@@ -292,7 +330,7 @@ class _AppTextField extends StatelessWidget {
               vertical: 18,
             ),
             hintStyle: TextStyle(
-              color: AppTheme.secondaryTextColor(context).withOpacity(0.7),
+              color: AppTheme.secondaryTextColor(context).withValues(alpha: 0.7),
               fontWeight: FontWeight.w500,
             ),
             errorStyle: const TextStyle(

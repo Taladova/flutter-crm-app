@@ -30,7 +30,7 @@ final clientByIdProvider = Provider.family<ClientModel?, String>((
       }
     },
     loading: () => null,
-    error: (_, __) => null,
+    error: (_, _) => null,
   );
 });
 
@@ -48,6 +48,27 @@ class ClientController extends AsyncNotifier<List<ClientModel>> {
     state = AsyncValue.data(updatedClients);
 
     await ref.read(clientRepositoryProvider).addClient(client);
+  }
+
+  Future<void> updateClient(ClientModel client) async {
+    final currentClients = state.value ?? [];
+    final updatedClients = currentClients
+        .map((existing) => existing.id == client.id ? client : existing)
+        .toList();
+
+    state = AsyncValue.data(updatedClients);
+
+    await ref.read(clientRepositoryProvider).updateClient(client);
+  }
+
+  Future<void> deleteClient(String id) async {
+    final currentClients = state.value ?? [];
+    final updatedClients =
+        currentClients.where((client) => client.id != id).toList();
+
+    state = AsyncValue.data(updatedClients);
+
+    await ref.read(clientRepositoryProvider).deleteClient(id);
   }
 
   Future<void> resetClients() async {

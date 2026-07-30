@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -31,11 +32,15 @@ class ClientDetailPage extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _DetailHeader(client: client),
+                    _DetailHeader(
+                      client: client,
+                      onEdit: () => context.push('/clients/${client.id}/edit'),
+                      onDelete: () => _confirmDelete(context, ref, client),
+                    ),
                     const SizedBox(height: 24),
                     _ClientInfoCard(client: client),
                     const SizedBox(height: 24),
-                    const _QuickActions(),
+                    _QuickActions(client: client),
                     const SizedBox(height: 24),
                     const _SectionTitle(title: 'Projets associés'),
                     const SizedBox(height: 14),
@@ -76,7 +81,7 @@ class ClientDetailPage extends ConsumerWidget {
                     const SizedBox(height: 24),
                     const _SectionTitle(title: 'Notes'),
                     const SizedBox(height: 14),
-                    const _NotesCard(),
+                    _NotesCard(client: client),
                   ],
                 ),
               ),
@@ -85,10 +90,57 @@ class ClientDetailPage extends ConsumerWidget {
   }
 }
 
+Future<void> _confirmDelete(
+  BuildContext context,
+  WidgetRef ref,
+  ClientModel client,
+) async {
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('Supprimer ce client ?'),
+      content: Text(
+        'Cette action supprimera définitivement "${client.name}". Elle est irréversible.',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(false),
+          child: const Text('Annuler'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(true),
+          child: const Text(
+            'Supprimer',
+            style: TextStyle(color: Color(0xFFDC2626)),
+          ),
+        ),
+      ],
+    ),
+  );
+
+  if (confirmed != true) return;
+
+  await ref.read(clientControllerProvider.notifier).deleteClient(client.id);
+
+  if (!context.mounted) return;
+
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(content: Text('Client supprimé.')),
+  );
+
+  context.pop();
+}
+
 class _DetailHeader extends StatelessWidget {
-  const _DetailHeader({required this.client});
+  const _DetailHeader({
+    required this.client,
+    required this.onEdit,
+    required this.onDelete,
+  });
 
   final ClientModel client;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -128,14 +180,35 @@ class _DetailHeader extends StatelessWidget {
             ],
           ),
         ),
-        Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            color: AppTheme.primaryColor,
-            borderRadius: BorderRadius.circular(15),
+        GestureDetector(
+          onTap: onDelete,
+          child: Container(
+            width: 44,
+            height: 44,
+            margin: const EdgeInsets.only(right: 10),
+            decoration: BoxDecoration(
+              color: AppTheme.cardColor(context),
+              borderRadius: BorderRadius.circular(15),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+            ),
+            child: const Icon(
+              Icons.delete_outline_rounded,
+              color: Color(0xFFDC2626),
+              size: 21,
+            ),
           ),
-          child: Icon(Icons.edit_rounded, color: AppTheme.cardColor(context), size: 21),
+        ),
+        GestureDetector(
+          onTap: onEdit,
+          child: Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: AppTheme.primaryColor,
+              borderRadius: BorderRadius.circular(15),
+            ),
+            child: Icon(Icons.edit_rounded, color: AppTheme.cardColor(context), size: 21),
+          ),
         ),
       ],
     );
@@ -158,7 +231,7 @@ class _ClientInfoCard extends StatelessWidget {
         border: Border.all(color: const Color(0xFFE2E8F0)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.025),
+            color: Colors.black.withValues(alpha: 0.025),
             blurRadius: 14,
             offset: const Offset(0, 8),
           ),
@@ -168,7 +241,7 @@ class _ClientInfoCard extends StatelessWidget {
         children: [
           CircleAvatar(
             radius: 36,
-            backgroundColor: AppTheme.primaryColor.withOpacity(0.1),
+            backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.1),
             child: Text(
               client.name.substring(0, 1),
               style: const TextStyle(
@@ -222,15 +295,41 @@ class _ClientInfoCard extends StatelessWidget {
   }
 }
 
-class _QuickActions extends StatelessWidget {
-  const _QuickActions();
+class _QuickActions extends ConsumerWidget {
+  const _QuickActions({required this.client});
+
+  final ClientModel client;
+
+  Future<void> _copyToClipboard(
+    BuildContext context,
+    String label,
+    String value,
+  ) async {
+    await Clipboard.setData(ClipboardData(text: value));
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('$label copié : $value')),
+    );
+  }
 
   @override
-  Widget build(BuildContext context) {
-    final actions = const [
-      _ActionItem(icon: Icons.call_rounded, title: 'Appeler'),
-      _ActionItem(icon: Icons.email_rounded, title: 'Email'),
-      _ActionItem(icon: Icons.note_add_rounded, title: 'Note'),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final actions = [
+      _ActionItem(
+        icon: Icons.call_rounded,
+        title: 'Appeler',
+        onTap: () => _copyToClipboard(context, 'Numéro', client.phone),
+      ),
+      _ActionItem(
+        icon: Icons.email_rounded,
+        title: 'Email',
+        onTap: () => _copyToClipboard(context, 'Email', client.email),
+      ),
+      _ActionItem(
+        icon: Icons.note_add_rounded,
+        title: 'Note',
+        onTap: () => _editNotes(context, ref),
+      ),
     ];
 
     return Row(
@@ -239,27 +338,34 @@ class _QuickActions extends StatelessWidget {
             (action) => Expanded(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 5),
-                child: Container(
-                  height: 84,
-                  decoration: BoxDecoration(
-                    color: AppTheme.cardColor(context),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
                     borderRadius: BorderRadius.circular(22),
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(action.icon, color: AppTheme.primaryColor),
-                      const SizedBox(height: 8),
-                      Text(
-                        action.title,
-                        style: TextStyle(
-                          color: AppTheme.mainTextColor(context),
-                          fontSize: 13,
-                          fontWeight: FontWeight.w800,
-                        ),
+                    onTap: action.onTap,
+                    child: Container(
+                      height: 84,
+                      decoration: BoxDecoration(
+                        color: AppTheme.cardColor(context),
+                        borderRadius: BorderRadius.circular(22),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
                       ),
-                    ],
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(action.icon, color: AppTheme.primaryColor),
+                          const SizedBox(height: 8),
+                          Text(
+                            action.title,
+                            style: TextStyle(
+                              color: AppTheme.mainTextColor(context),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -267,6 +373,39 @@ class _QuickActions extends StatelessWidget {
           )
           .toList(),
     );
+  }
+
+  Future<void> _editNotes(BuildContext context, WidgetRef ref) async {
+    final controller = TextEditingController(text: client.notes);
+    final result = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Note client'),
+        content: TextField(
+          controller: controller,
+          maxLines: 5,
+          decoration: const InputDecoration(
+            hintText: 'Ajoutez une note sur ce client...',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Annuler'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(dialogContext).pop(controller.text.trim()),
+            child: const Text('Enregistrer'),
+          ),
+        ],
+      ),
+    );
+
+    if (result == null) return;
+
+    await ref
+        .read(clientControllerProvider.notifier)
+        .updateClient(client.copyWith(notes: result));
   }
 }
 
@@ -291,7 +430,7 @@ class _CreateProjectButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: AppTheme.primaryColor.withOpacity(0.22),
+              color: AppTheme.primaryColor.withValues(alpha: 0.22),
               blurRadius: 18,
               offset: const Offset(0, 10),
             ),
@@ -404,26 +543,70 @@ class _ProjectMiniCard extends StatelessWidget {
   }
 }
 
-class _NotesCard extends StatelessWidget {
-  const _NotesCard();
+class _NotesCard extends ConsumerWidget {
+  const _NotesCard({required this.client});
+
+  final ClientModel client;
+
+  Future<void> _editNotes(BuildContext context, WidgetRef ref) async {
+    final controller = TextEditingController(text: client.notes);
+    final result = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Note client'),
+        content: TextField(
+          controller: controller,
+          maxLines: 5,
+          decoration: const InputDecoration(
+            hintText: 'Ajoutez une note sur ce client...',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Annuler'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(dialogContext).pop(controller.text.trim()),
+            child: const Text('Enregistrer'),
+          ),
+        ],
+      ),
+    );
+
+    if (result == null) return;
+
+    await ref
+        .read(clientControllerProvider.notifier)
+        .updateClient(client.copyWith(notes: result));
+  }
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: AppTheme.cardColor(context),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final hasNotes = client.notes.trim().isNotEmpty;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: Text(
-        'Client intéressé par un site WordPress moderne avec une boutique en ligne. Prévoir une proposition avec design premium, pages produits et configuration WooCommerce.',
-        style: TextStyle(
-          color: AppTheme.secondaryTextColor(context),
-          fontSize: 14,
-          height: 1.6,
-          fontWeight: FontWeight.w600,
+        onTap: () => _editNotes(context, ref),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: AppTheme.cardColor(context),
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+          ),
+          child: Text(
+            hasNotes ? client.notes : 'Aucune note pour ce client. Touchez pour en ajouter une.',
+            style: TextStyle(
+              color: AppTheme.secondaryTextColor(context),
+              fontSize: 14,
+              height: 1.6,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ),
       ),
     );
@@ -524,8 +707,13 @@ class _StatusBadge extends StatelessWidget {
 }
 
 class _ActionItem {
-  const _ActionItem({required this.icon, required this.title});
+  const _ActionItem({
+    required this.icon,
+    required this.title,
+    required this.onTap,
+  });
 
   final IconData icon;
   final String title;
+  final VoidCallback onTap;
 }

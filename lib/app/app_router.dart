@@ -1,7 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../features/auth/presentation/login_page.dart';
+import '../features/auth/providers/auth_providers.dart';
 import '../features/main_navigation/presentation/main_navigation_page.dart';
 import '../features/onboarding/presentation/onboarding_page.dart';
 import '../features/splash/presentation/splash_page.dart';
@@ -10,7 +14,27 @@ import '../features/projects/presentation/project_detail_page.dart';
 import '../features/clients/presentation/add_client_page.dart';
 import '../features/projects/presentation/add_project_page.dart';
 import '../features/tasks/presentation/add_task_page.dart';
+import '../features/tasks/presentation/task_detail_page.dart';
 import '../features/auth/presentation/register_page.dart';
+
+const _publicRoutes = ['/', '/onboarding', '/login', '/register'];
+
+class GoRouterRefreshStream extends ChangeNotifier {
+  GoRouterRefreshStream(Stream<dynamic> stream) {
+    notifyListeners();
+    _subscription = stream.asBroadcastStream().listen((_) {
+      notifyListeners();
+    });
+  }
+
+  late final StreamSubscription<dynamic> _subscription;
+
+  @override
+  void dispose() {
+    _subscription.cancel();
+    super.dispose();
+  }
+}
 
 CustomTransitionPage<T> buildSlideTransitionPage<T>({
   required GoRouterState state,
@@ -46,9 +70,32 @@ CustomTransitionPage<T> buildSlideTransitionPage<T>({
   );
 }
 
-class AppRouter {
-  static final GoRouter router = GoRouter(
+final routerProvider = Provider<GoRouter>((ref) {
+  final refreshStream = GoRouterRefreshStream(
+    ref.watch(authServiceProvider).authStateChanges,
+  );
+
+  ref.onDispose(refreshStream.dispose);
+
+  final router = GoRouter(
     initialLocation: '/',
+    refreshListenable: refreshStream,
+    redirect: (context, state) {
+      final isLoggedIn = ref.read(firebaseAuthProvider).currentUser != null;
+      final isPublicRoute = _publicRoutes.contains(state.matchedLocation);
+
+      if (!isLoggedIn && !isPublicRoute) {
+        return '/login';
+      }
+
+      if (isLoggedIn &&
+          (state.matchedLocation == '/login' ||
+              state.matchedLocation == '/register')) {
+        return '/main';
+      }
+
+      return null;
+    },
     routes: [
       GoRoute(
         path: '/',
@@ -93,6 +140,18 @@ class AppRouter {
         },
       ),
       GoRoute(
+        path: '/clients/:clientId/edit',
+        name: 'editClient',
+        pageBuilder: (context, state) {
+          final clientId = state.pathParameters['clientId']!;
+
+          return buildSlideTransitionPage(
+            state: state,
+            child: AddClientPage(clientId: clientId),
+          );
+        },
+      ),
+      GoRoute(
         path: '/projects/add',
         name: 'addProject',
         pageBuilder: (context, state) {
@@ -117,7 +176,20 @@ class AppRouter {
         },
       ),
       GoRoute(
+        path: '/projects/:projectId/edit',
+        name: 'editProject',
+        pageBuilder: (context, state) {
+          final projectId = state.pathParameters['projectId']!;
+
+          return buildSlideTransitionPage(
+            state: state,
+            child: AddProjectPage(projectId: projectId),
+          );
+        },
+      ),
+      GoRoute(
         path: '/tasks/add',
+        name: 'addTask',
         pageBuilder: (context, state) {
           final projectId = state.uri.queryParameters['projectId'];
           final projectName = state.uri.queryParameters['projectName'];
@@ -125,6 +197,30 @@ class AppRouter {
           return buildSlideTransitionPage(
             state: state,
             child: AddTaskPage(projectId: projectId, projectName: projectName),
+          );
+        },
+      ),
+      GoRoute(
+        path: '/tasks/:taskId',
+        name: 'taskDetail',
+        pageBuilder: (context, state) {
+          final taskId = state.pathParameters['taskId']!;
+
+          return buildSlideTransitionPage(
+            state: state,
+            child: TaskDetailPage(taskId: taskId),
+          );
+        },
+      ),
+      GoRoute(
+        path: '/tasks/:taskId/edit',
+        name: 'editTask',
+        pageBuilder: (context, state) {
+          final taskId = state.pathParameters['taskId']!;
+
+          return buildSlideTransitionPage(
+            state: state,
+            child: AddTaskPage(taskId: taskId),
           );
         },
       ),
@@ -140,4 +236,6 @@ class AppRouter {
       ),
     ],
   );
-}
+
+  return router;
+});

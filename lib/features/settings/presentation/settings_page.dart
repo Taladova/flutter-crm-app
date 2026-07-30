@@ -8,6 +8,7 @@ import '../../auth/providers/auth_providers.dart';
 import '../../clients/providers/client_providers.dart';
 import '../../projects/providers/project_providers.dart';
 import '../../tasks/providers/task_providers.dart';
+import '../providers/notifications_provider.dart';
 
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
@@ -48,7 +49,7 @@ class SettingsPage extends ConsumerWidget {
                         subtitle: isDark ? 'Activé' : 'Désactivé',
                         trailing: Switch(
                           value: isDark,
-                          activeColor: AppTheme.primaryColor,
+                          activeThumbColor: AppTheme.primaryColor,
                           onChanged: (value) {
                             ref
                                 .read(themeModeProvider.notifier)
@@ -58,57 +59,53 @@ class SettingsPage extends ConsumerWidget {
                       );
                     },
                   ),
+                  Consumer(
+                    builder: (context, ref, child) {
+                      final notificationsAsync = ref.watch(notificationsEnabledProvider);
+                      final enabled = notificationsAsync.value ?? true;
+
+                      return _SettingsTile(
+                        icon: Icons.notifications_rounded,
+                        title: 'Notifications',
+                        subtitle: enabled
+                            ? 'Rappels de deadlines activés'
+                            : 'Rappels de deadlines désactivés',
+                        trailing: Switch(
+                          value: enabled,
+                          activeThumbColor: AppTheme.primaryColor,
+                          onChanged: (value) {
+                            ref
+                                .read(notificationsEnabledProvider.notifier)
+                                .setEnabled(value);
+                          },
+                        ),
+                      );
+                    },
+                  ),
                   _SettingsTile(
-                    icon: Icons.notifications_rounded,
-                    title: 'Notifications',
-                    subtitle: 'Rappels de deadlines',
-                    trailing: Icon(
-                      Icons.arrow_forward_ios_rounded,
-                      size: 16,
-                      color: AppTheme.secondaryTextColor(context),
+                    icon: Icons.language_rounded,
+                    title: 'Langue',
+                    subtitle: 'Français',
+                    trailing: const Icon(
+                      Icons.chevron_right_rounded,
+                      size: 18,
                     ),
                     onTap: () {
-                      showModalBottomSheet(
+                      showDialog(
                         context: context,
-                        backgroundColor: AppTheme.cardColor(context),
-                        shape: const RoundedRectangleBorder(
-                          borderRadius: BorderRadius.vertical(
-                            top: Radius.circular(24),
+                        builder: (dialogContext) => AlertDialog(
+                          title: const Text('Langue'),
+                          content: const Text(
+                            'ClientFlow Pro est disponible en français pour le moment. '
+                            'D\'autres langues seront ajoutées prochainement.',
                           ),
-                        ),
-                        builder: (_) {
-                          return Padding(
-                            padding: const EdgeInsets.all(24),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(
-                                  Icons.notifications_active_rounded,
-                                  size: 46,
-                                  color: AppTheme.primaryColor,
-                                ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  'Notifications bientôt disponibles',
-                                  style: TextStyle(
-                                    color: AppTheme.mainTextColor(context),
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
-                                const SizedBox(height: 10),
-                                Text(
-                                  'Vous recevrez bientôt des rappels pour vos tâches et projets.',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    color: AppTheme.secondaryTextColor(context),
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(dialogContext),
+                              child: const Text('OK'),
                             ),
-                          );
-                        },
+                          ],
+                        ),
                       );
                     },
                   ),
@@ -316,7 +313,7 @@ class _ProfileCard extends StatelessWidget {
         boxShadow: [
           if (!AppTheme.isDark(context))
             BoxShadow(
-              color: AppTheme.primaryColor.withOpacity(0.22),
+              color: AppTheme.primaryColor.withValues(alpha: 0.22),
               blurRadius: 24,
               offset: const Offset(0, 14),
             ),
@@ -328,7 +325,7 @@ class _ProfileCard extends StatelessWidget {
             width: 64,
             height: 64,
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.12),
+              color: Colors.black.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(22),
             ),
             child: const Icon(
@@ -354,7 +351,7 @@ class _ProfileCard extends StatelessWidget {
                 Text(
                   email,
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.88),
+                    color: Colors.white.withValues(alpha: 0.88),
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                   ),
@@ -366,7 +363,7 @@ class _ProfileCard extends StatelessWidget {
                     vertical: 7,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.12),
+                    color: Colors.black.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(100),
                   ),
                   child: const Text(
@@ -410,7 +407,7 @@ class _SettingsSection extends StatelessWidget {
                   if (entry.key != children.length - 1)
                     Divider(
                       height: 1,
-                      color: AppTheme.borderColor(context).withOpacity(0.45),
+                      color: AppTheme.borderColor(context).withValues(alpha: 0.45),
                     ),
                 ],
               ),
@@ -451,7 +448,7 @@ class _SettingsTile extends StatelessWidget {
                 width: 42,
                 height: 42,
                 decoration: BoxDecoration(
-                  color: AppTheme.primaryColor.withOpacity(0.12),
+                  color: AppTheme.primaryColor.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Icon(icon, color: AppTheme.primaryColor, size: 21),
@@ -498,7 +495,7 @@ class _ComingSoonBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
       decoration: BoxDecoration(
-        color: AppTheme.primaryColor.withOpacity(0.12),
+        color: AppTheme.primaryColor.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(100),
       ),
       child: const Text(
@@ -521,7 +518,7 @@ class _LogoutButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final borderColor = AppTheme.isDark(context)
-        ? const Color(0xFF7F1D1D).withOpacity(0.45)
+        ? const Color(0xFF7F1D1D).withValues(alpha: 0.45)
         : const Color(0xFFFEE2E2);
 
     return GestureDetector(

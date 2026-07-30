@@ -161,7 +161,7 @@ class _TasksHeader extends StatelessWidget {
               boxShadow: [
                 if (!AppTheme.isDark(context))
                   BoxShadow(
-                    color: AppTheme.primaryColor.withOpacity(0.22),
+                    color: AppTheme.primaryColor.withValues(alpha: 0.22),
                     blurRadius: 20,
                     offset: const Offset(0, 10),
                   ),
@@ -201,7 +201,7 @@ class _TasksSummaryCard extends StatelessWidget {
         boxShadow: [
           if (!AppTheme.isDark(context))
             BoxShadow(
-              color: AppTheme.primaryColor.withOpacity(0.22),
+              color: AppTheme.primaryColor.withValues(alpha: 0.22),
               blurRadius: 24,
               offset: const Offset(0, 14),
             ),
@@ -213,7 +213,7 @@ class _TasksSummaryCard extends StatelessWidget {
             width: 54,
             height: 54,
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.12),
+              color: Colors.black.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(18),
             ),
             child: const Icon(
@@ -239,7 +239,7 @@ class _TasksSummaryCard extends StatelessWidget {
                 Text(
                   '$doneTasks tâche(s) terminée(s) sur $totalTasks • $percent%',
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.86),
+                    color: Colors.white.withValues(alpha: 0.86),
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                   ),
@@ -250,7 +250,7 @@ class _TasksSummaryCard extends StatelessWidget {
                   child: LinearProgressIndicator(
                     value: progress,
                     minHeight: 9,
-                    backgroundColor: Colors.black.withOpacity(0.16),
+                    backgroundColor: Colors.black.withValues(alpha: 0.16),
                     color: Colors.white,
                   ),
                 ),
@@ -281,7 +281,7 @@ class _FilterChips extends StatelessWidget {
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: filters.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 10),
+        separatorBuilder: (_, _) => const SizedBox(width: 10),
         itemBuilder: (context, index) {
           final filter = filters[index];
           final isSelected = filter == selectedFilter;
@@ -350,7 +350,7 @@ class _TaskCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: isDone
                       ? const Color(0xFFDCFCE7)
-                      : AppTheme.primaryColor.withOpacity(0.14),
+                      : AppTheme.primaryColor.withValues(alpha: 0.14),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Icon(
@@ -421,6 +421,14 @@ class _TaskCard extends StatelessWidget {
                   ),
                 ],
               ),
+              const SizedBox(width: 6),
+              GestureDetector(
+                onTap: () => context.push('/tasks/${task.id}'),
+                child: Icon(
+                  Icons.chevron_right_rounded,
+                  color: AppTheme.secondaryTextColor(context),
+                ),
+              ),
             ],
           ),
         ),
@@ -454,7 +462,7 @@ class _MiniBadge extends StatelessWidget {
           textColor = const Color(0xFFD97706);
           break;
         default:
-          backgroundColor = AppTheme.primaryColor.withOpacity(0.14);
+          backgroundColor = AppTheme.primaryColor.withValues(alpha: 0.14);
           textColor = AppTheme.primaryColor;
       }
     } else {
@@ -464,7 +472,7 @@ class _MiniBadge extends StatelessWidget {
           textColor = const Color(0xFF16A34A);
           break;
         case 'En cours':
-          backgroundColor = AppTheme.primaryColor.withOpacity(0.14);
+          backgroundColor = AppTheme.primaryColor.withValues(alpha: 0.14);
           textColor = AppTheme.primaryColor;
           break;
         default:
@@ -482,7 +490,7 @@ class _MiniBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(100),
         border: Border.all(
           color: AppTheme.isDark(context)
-              ? AppTheme.borderColor(context).withOpacity(0.45)
+              ? AppTheme.borderColor(context).withValues(alpha: 0.45)
               : Colors.transparent,
         ),
       ),

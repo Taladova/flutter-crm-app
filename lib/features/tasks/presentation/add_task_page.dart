@@ -15,10 +15,14 @@ class AddTaskPage extends ConsumerStatefulWidget {
     super.key,
     this.projectId,
     this.projectName,
+    this.taskId,
   });
 
   final String? projectId;
   final String? projectName;
+  final String? taskId;
+
+  bool get isEditing => taskId != null;
 
   @override
   ConsumerState<AddTaskPage> createState() => _AddTaskPageState();
@@ -41,6 +45,18 @@ class _AddTaskPageState extends ConsumerState<AddTaskPage> {
     super.initState();
     selectedProjectId = widget.projectId;
     selectedProjectName = widget.projectName;
+
+    if (widget.taskId != null) {
+      final task = ref.read(taskByIdProvider(widget.taskId!));
+
+      if (task != null) {
+        titleController.text = task.title;
+        deadlineController.text = task.deadline;
+        selectedPriority = task.priority;
+        selectedProjectId = task.projectId;
+        selectedProjectName = task.projectName;
+      }
+    }
   }
 
   @override
@@ -64,27 +80,42 @@ class _AddTaskPageState extends ConsumerState<AddTaskPage> {
       return;
     }
 
-    final newTask = TaskModel(
-      id: 'task_${DateTime.now().millisecondsSinceEpoch}',
+    final existingTask =
+        widget.taskId != null ? ref.read(taskByIdProvider(widget.taskId!)) : null;
+
+    final task = TaskModel(
+      id: widget.taskId ?? 'task_${DateTime.now().millisecondsSinceEpoch}',
       title: titleController.text.trim(),
       projectName: selectedProjectName!,
       projectId: selectedProjectId!,
-      status: 'À faire',
+      status: existingTask?.status ?? 'À faire',
       priority: selectedPriority,
       deadline: deadlineController.text.trim(),
     );
 
-    await ref.read(taskControllerProvider.notifier).addTask(newTask);
+    if (widget.isEditing) {
+      await ref.read(taskControllerProvider.notifier).updateTask(task);
+    } else {
+      await ref.read(taskControllerProvider.notifier).addTask(task);
+    }
 
     if (!mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Tâche ajoutée avec succès.'),
+      SnackBar(
+        content: Text(
+          widget.isEditing
+              ? 'Tâche mise à jour avec succès.'
+              : 'Tâche ajoutée avec succès.',
+        ),
       ),
     );
 
-    context.go('/tasks');
+    if (widget.isEditing) {
+      context.pop();
+    } else {
+      context.go('/tasks');
+    }
   }
 
   @override
@@ -103,6 +134,7 @@ class _AddTaskPageState extends ConsumerState<AddTaskPage> {
               children: [
                 _AddTaskHeader(
                   onBack: () => context.pop(),
+                  title: widget.isEditing ? 'Modifier la tâche' : 'Nouvelle tâche',
                 ),
                 const SizedBox(height: 24),
                 const SectionTitle(title: 'Projet associé'),
@@ -189,9 +221,9 @@ class _AddTaskPageState extends ConsumerState<AddTaskPage> {
                         borderRadius: BorderRadius.circular(18),
                       ),
                     ),
-                    child: const Text(
-                      'Ajouter la tâche',
-                      style: TextStyle(
+                    child: Text(
+                      widget.isEditing ? 'Enregistrer' : 'Ajouter la tâche',
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 16,
                         fontWeight: FontWeight.w900,
@@ -211,9 +243,11 @@ class _AddTaskPageState extends ConsumerState<AddTaskPage> {
 class _AddTaskHeader extends StatelessWidget {
   const _AddTaskHeader({
     required this.onBack,
+    required this.title,
   });
 
   final VoidCallback onBack;
+  final String title;
 
   @override
   Widget build(BuildContext context) {
@@ -240,7 +274,7 @@ class _AddTaskHeader extends StatelessWidget {
         const SizedBox(width: 14),
         Expanded(
           child: Text(
-            'Nouvelle tâche',
+            title,
             style: Theme.of(context).textTheme.titleLarge,
           ),
         ),
@@ -264,7 +298,7 @@ class _ProjectSelector extends StatelessWidget {
   Widget build(BuildContext context) {
     return AppCard(
       child: DropdownButtonFormField<String>(
-        value: selectedProjectId,
+        initialValue: selectedProjectId,
         dropdownColor: AppTheme.cardColor(context),
         iconEnabledColor: AppTheme.secondaryTextColor(context),
         style: TextStyle(
@@ -380,7 +414,7 @@ class _AppTextField extends StatelessWidget {
               vertical: 18,
             ),
             hintStyle: TextStyle(
-              color: AppTheme.secondaryTextColor(context).withOpacity(0.7),
+              color: AppTheme.secondaryTextColor(context).withValues(alpha: 0.7),
               fontWeight: FontWeight.w500,
             ),
             border: OutlineInputBorder(

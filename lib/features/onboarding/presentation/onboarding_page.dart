@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../app/app_theme.dart';
+import '../../../core/utils/onboarding_prefs.dart';
 
 class OnboardingPage extends StatefulWidget {
   const OnboardingPage({super.key});
@@ -42,8 +43,14 @@ class _OnboardingPageState extends State<OnboardingPage> {
         curve: Curves.easeOut,
       );
     } else {
-      context.go('/login');
+      _finishOnboarding();
     }
+  }
+
+  Future<void> _finishOnboarding() async {
+    await markOnboardingSeen();
+    if (!mounted) return;
+    context.go('/login');
   }
 
   @override
@@ -66,9 +73,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
-                  onPressed: () {
-                    context.go('/login');
-                  },
+                  onPressed: _finishOnboarding,
                   child: const Text(
                     'Passer',
                     style: TextStyle(
@@ -146,7 +151,7 @@ class _OnboardingSlide extends StatelessWidget {
           width: 190,
           height: 190,
           decoration: BoxDecoration(
-            color: AppTheme.primaryColor.withOpacity(0.1),
+            color: AppTheme.primaryColor.withValues(alpha: 0.1),
             shape: BoxShape.circle,
           ),
           child: Center(
@@ -158,7 +163,7 @@ class _OnboardingSlide extends StatelessWidget {
                 borderRadius: BorderRadius.circular(34),
                 boxShadow: [
                   BoxShadow(
-                    color: AppTheme.primaryColor.withOpacity(0.28),
+                    color: AppTheme.primaryColor.withValues(alpha: 0.28),
                     blurRadius: 32,
                     offset: const Offset(0, 18),
                   ),
@@ -202,7 +207,7 @@ class _PageIndicator extends StatelessWidget {
       decoration: BoxDecoration(
         color: isActive
             ? AppTheme.primaryColor
-            : AppTheme.primaryColor.withOpacity(0.18),
+            : AppTheme.primaryColor.withValues(alpha: 0.18),
         borderRadius: BorderRadius.circular(20),
       ),
     );

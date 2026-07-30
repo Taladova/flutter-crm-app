@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/app_theme.dart';
 import '../../auth/providers/auth_providers.dart';
-import '../../auth/providers/auth_providers.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
@@ -116,7 +115,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: AppTheme.primaryColor.withOpacity(0.28),
+                color: AppTheme.primaryColor.withValues(alpha: 0.28),
                 blurRadius: 24,
                 offset: const Offset(0, 14),
               ),

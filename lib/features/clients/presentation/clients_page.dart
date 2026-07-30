@@ -169,7 +169,7 @@ class _ClientsHeader extends StatelessWidget {
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: AppTheme.primaryColor.withOpacity(0.22),
+                  color: AppTheme.primaryColor.withValues(alpha: 0.22),
                   blurRadius: 20,
                   offset: const Offset(0, 10),
                 ),
@@ -266,7 +266,7 @@ class _FilterChips extends StatelessWidget {
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: filters.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 10),
+        separatorBuilder: (_, _) => const SizedBox(width: 10),
         itemBuilder: (context, index) {
           final filter = filters[index];
           final isSelected = filter == selectedFilter;
@@ -329,7 +329,7 @@ class _ClientCard extends StatelessWidget {
                 children: [
                   CircleAvatar(
                     radius: 25,
-                    backgroundColor: AppTheme.primaryColor.withOpacity(0.14),
+                    backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.14),
                     child: Text(
                       client.name.substring(0, 1),
                       style: const TextStyle(

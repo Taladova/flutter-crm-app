@@ -44,6 +44,17 @@ class ClientRepository {
     return ClientModel.fromJson(doc.data()!);
   }
 
+  Future<void> updateClient(ClientModel client) async {
+    await firestoreService
+        .userCollection('clients')
+        .doc(client.id)
+        .set(client.toJson());
+  }
+
+  Future<void> deleteClient(String id) async {
+    await firestoreService.userCollection('clients').doc(id).delete();
+  }
+
   Future<void> resetClients() async {
     final collection = firestoreService.userCollection('clients');
     final snapshot = await collection.get();

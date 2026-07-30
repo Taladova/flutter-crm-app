@@ -32,7 +32,11 @@ class ProjectDetailPage extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _ProjectHeader(project: project),
+                    _ProjectHeader(
+                      project: project,
+                      onEdit: () => context.push('/projects/${project.id}/edit'),
+                      onDelete: () => _confirmDeleteProject(context, ref, project),
+                    ),
                     const SizedBox(height: 24),
                     _ProjectHeroCard(
                       project: project,
@@ -94,7 +98,7 @@ class ProjectDetailPage extends ConsumerWidget {
                     const SizedBox(height: 24),
                     const _SectionTitle(title: 'Notes projet'),
                     const SizedBox(height: 14),
-                    const _ProjectNotesCard(),
+                    _ProjectNotesCard(project: project),
                   ],
                 ),
               ),
@@ -146,6 +150,14 @@ class _ProjectTaskCard extends ConsumerWidget {
                 color: AppTheme.secondaryTextColor(context),
               ),
             ),
+            const SizedBox(width: 6),
+            GestureDetector(
+              onTap: () => context.push('/tasks/${task.id}'),
+              child: Icon(
+                Icons.chevron_right_rounded,
+                color: AppTheme.secondaryTextColor(context),
+              ),
+            ),
           ],
         ),
       ),
@@ -153,10 +165,57 @@ class _ProjectTaskCard extends ConsumerWidget {
   }
 }
 
+Future<void> _confirmDeleteProject(
+  BuildContext context,
+  WidgetRef ref,
+  ProjectModel project,
+) async {
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('Supprimer ce projet ?'),
+      content: Text(
+        'Cette action supprimera définitivement "${project.title}". Elle est irréversible.',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(false),
+          child: const Text('Annuler'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(true),
+          child: const Text(
+            'Supprimer',
+            style: TextStyle(color: Color(0xFFDC2626)),
+          ),
+        ),
+      ],
+    ),
+  );
+
+  if (confirmed != true) return;
+
+  await ref.read(projectControllerProvider.notifier).deleteProject(project.id);
+
+  if (!context.mounted) return;
+
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(content: Text('Projet supprimé.')),
+  );
+
+  context.pop();
+}
+
 class _ProjectHeader extends StatelessWidget {
-  const _ProjectHeader({required this.project});
+  const _ProjectHeader({
+    required this.project,
+    required this.onEdit,
+    required this.onDelete,
+  });
 
   final ProjectModel project;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -201,14 +260,35 @@ class _ProjectHeader extends StatelessWidget {
             ],
           ),
         ),
-        Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            color: AppTheme.primaryColor,
-            borderRadius: BorderRadius.circular(15),
+        GestureDetector(
+          onTap: onDelete,
+          child: Container(
+            width: 44,
+            height: 44,
+            margin: const EdgeInsets.only(right: 10),
+            decoration: BoxDecoration(
+              color: AppTheme.cardColor(context),
+              borderRadius: BorderRadius.circular(15),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+            ),
+            child: const Icon(
+              Icons.delete_outline_rounded,
+              color: Color(0xFFDC2626),
+              size: 21,
+            ),
           ),
-          child: Icon(Icons.edit_rounded, color: AppTheme.cardColor(context), size: 21),
+        ),
+        GestureDetector(
+          onTap: onEdit,
+          child: Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: AppTheme.primaryColor,
+              borderRadius: BorderRadius.circular(15),
+            ),
+            child: Icon(Icons.edit_rounded, color: AppTheme.cardColor(context), size: 21),
+          ),
         ),
       ],
     );
@@ -231,7 +311,7 @@ class _ProjectHeroCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.primaryColor.withOpacity(0.22),
+            color: AppTheme.primaryColor.withValues(alpha: 0.22),
             blurRadius: 24,
             offset: const Offset(0, 14),
           ),
@@ -255,7 +335,7 @@ class _ProjectHeroCard extends StatelessWidget {
           Text(
             '${project.clientName} • ${project.type}',
             style: TextStyle(
-              color: AppTheme.cardColor(context).withOpacity(0.85),
+              color: AppTheme.cardColor(context).withValues(alpha: 0.85),
               fontSize: 14,
               fontWeight: FontWeight.w600,
             ),
@@ -269,7 +349,7 @@ class _ProjectHeroCard extends StatelessWidget {
                   child: LinearProgressIndicator(
                     value: project.progress,
                     minHeight: 10,
-                    backgroundColor: AppTheme.cardColor(context).withOpacity(0.22),
+                    backgroundColor: AppTheme.cardColor(context).withValues(alpha: 0.22),
                     color: AppTheme.cardColor(context),
                   ),
                 ),
@@ -401,22 +481,66 @@ class _TimelineRow extends StatelessWidget {
   }
 }
 
-class _ProjectNotesCard extends StatelessWidget {
-  const _ProjectNotesCard();
+class _ProjectNotesCard extends ConsumerWidget {
+  const _ProjectNotesCard({required this.project});
+
+  final ProjectModel project;
+
+  Future<void> _editNotes(BuildContext context, WidgetRef ref) async {
+    final controller = TextEditingController(text: project.notes);
+    final result = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Note projet'),
+        content: TextField(
+          controller: controller,
+          maxLines: 5,
+          decoration: const InputDecoration(
+            hintText: 'Ajoutez une note sur ce projet...',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Annuler'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(dialogContext).pop(controller.text.trim()),
+            child: const Text('Enregistrer'),
+          ),
+        ],
+      ),
+    );
+
+    if (result == null) return;
+
+    await ref
+        .read(projectControllerProvider.notifier)
+        .updateProject(project.copyWith(notes: result));
+  }
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: _cardDecoration(),
-      child: Text(
-        'Projet WordPress à présenter comme une boutique premium. Prévoir une homepage claire, des fiches produits soignées, une expérience mobile fluide et une configuration WooCommerce propre.',
-        style: TextStyle(
-          color: AppTheme.secondaryTextColor(context),
-          fontSize: 14,
-          height: 1.6,
-          fontWeight: FontWeight.w600,
+  Widget build(BuildContext context, WidgetRef ref) {
+    final hasNotes = project.notes.trim().isNotEmpty;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(22),
+        onTap: () => _editNotes(context, ref),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(18),
+          decoration: _cardDecoration(),
+          child: Text(
+            hasNotes ? project.notes : 'Aucune note pour ce projet. Touchez pour en ajouter une.',
+            style: TextStyle(
+              color: AppTheme.secondaryTextColor(context),
+              fontSize: 14,
+              height: 1.6,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ),
       ),
     );
@@ -484,7 +608,7 @@ class _StatusBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: AppTheme.cardColor(context).withOpacity(0.18),
+        color: AppTheme.cardColor(context).withValues(alpha: 0.18),
         borderRadius: BorderRadius.circular(100),
       ),
       child: Text(
@@ -506,7 +630,7 @@ BoxDecoration _cardDecoration() {
     border: Border.all(color: const Color(0xFFE2E8F0)),
     boxShadow: [
       BoxShadow(
-        color: Colors.black.withOpacity(0.025),
+        color: Colors.black.withValues(alpha: 0.025),
         blurRadius: 14,
         offset: const Offset(0, 8),
       ),

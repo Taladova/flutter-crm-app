@@ -176,7 +176,7 @@ class _ProjectsHeader extends StatelessWidget {
               boxShadow: [
                 if (!AppTheme.isDark(context))
                   BoxShadow(
-                    color: AppTheme.primaryColor.withOpacity(0.22),
+                    color: AppTheme.primaryColor.withValues(alpha: 0.22),
                     blurRadius: 20,
                     offset: const Offset(0, 10),
                   ),
@@ -219,7 +219,7 @@ class _ProjectSummaryCard extends StatelessWidget {
         boxShadow: [
           if (!AppTheme.isDark(context))
             BoxShadow(
-              color: AppTheme.primaryColor.withOpacity(0.22),
+              color: AppTheme.primaryColor.withValues(alpha: 0.22),
               blurRadius: 24,
               offset: const Offset(0, 14),
             ),
@@ -231,7 +231,7 @@ class _ProjectSummaryCard extends StatelessWidget {
             width: 54,
             height: 54,
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.12),
+              color: Colors.black.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(18),
             ),
             child: const Icon(
@@ -257,7 +257,7 @@ class _ProjectSummaryCard extends StatelessWidget {
                 Text(
                   '$activeProjects projet(s) en cours • $averageProgress% moyen',
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.86),
+                    color: Colors.white.withValues(alpha: 0.86),
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                   ),
@@ -289,7 +289,7 @@ class _FilterChips extends StatelessWidget {
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: filters.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 10),
+        separatorBuilder: (_, _) => const SizedBox(width: 10),
         itemBuilder: (context, index) {
           final filter = filters[index];
           final isSelected = filter == selectedFilter;
@@ -354,7 +354,7 @@ class _ProjectCard extends StatelessWidget {
                 children: [
                   CircleAvatar(
                     radius: 24,
-                    backgroundColor: AppTheme.primaryColor.withOpacity(0.14),
+                    backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.14),
                     child: const Icon(
                       Icons.language_rounded,
                       color: AppTheme.primaryColor,
@@ -414,7 +414,7 @@ class _ProjectCard extends StatelessWidget {
                         value: project.progress,
                         minHeight: 8,
                         backgroundColor:
-                            AppTheme.secondaryTextColor(context).withOpacity(0.16),
+                            AppTheme.secondaryTextColor(context).withValues(alpha: 0.16),
                         color: AppTheme.primaryColor,
                       ),
                     ),

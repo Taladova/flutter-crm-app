@@ -1,9 +1,8 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/app_theme.dart';
+import '../../../core/utils/onboarding_prefs.dart';
 
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
@@ -16,12 +15,19 @@ class _SplashPageState extends State<SplashPage> {
   @override
   void initState() {
     super.initState();
+    _redirect();
+  }
 
-    Timer(const Duration(seconds: 1), () {
-      if (mounted) {
-        context.go('/main');
-      }
-    });
+  Future<void> _redirect() async {
+    final results = await Future.wait([
+      hasSeenOnboarding(),
+      Future.delayed(const Duration(seconds: 1)),
+    ]);
+
+    if (!mounted) return;
+
+    final seenOnboarding = results[0] as bool;
+    context.go(seenOnboarding ? '/main' : '/onboarding');
   }
 
   @override
@@ -44,7 +50,7 @@ class _SplashPageState extends State<SplashPage> {
                     boxShadow: [
                       BoxShadow(
                         // ignore: deprecated_member_use
-                        color: Colors.black.withOpacity(0.12),
+                        color: Colors.black.withValues(alpha: 0.12),
                         blurRadius: 24,
                         offset: const Offset(0, 12),
                       ),
@@ -73,7 +79,7 @@ class _SplashPageState extends State<SplashPage> {
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     // ignore: deprecated_member_use
-                    color: AppTheme.cardColor(context).withOpacity(0.85),
+                    color: AppTheme.cardColor(context).withValues(alpha: 0.85),
                     fontSize: 16,
                     height: 1.5,
                     fontWeight: FontWeight.w500,
@@ -87,7 +93,7 @@ class _SplashPageState extends State<SplashPage> {
                     strokeWidth: 3,
                     valueColor: AlwaysStoppedAnimation<Color>(
                       // ignore: deprecated_member_use
-                      AppTheme.cardColor(context).withOpacity(0.9),
+                      AppTheme.cardColor(context).withValues(alpha: 0.9),
                     ),
                   ),
                 ),

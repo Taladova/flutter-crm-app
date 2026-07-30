@@ -42,7 +42,7 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.06),
+              color: Colors.black.withValues(alpha: 0.06),
               blurRadius: 18,
               offset: const Offset(0, -6),
             ),
@@ -53,7 +53,7 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
           height: 72,
           elevation: 0,
           backgroundColor: AppTheme.cardColor(context),
-          indicatorColor: AppTheme.primaryColor.withOpacity(0.12),
+          indicatorColor: AppTheme.primaryColor.withValues(alpha: 0.12),
           labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
           onDestinationSelected: (index) {
             setState(() {
