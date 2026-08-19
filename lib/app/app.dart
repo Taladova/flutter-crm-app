@@ -17,7 +17,7 @@ class ClientFlowApp extends ConsumerWidget {
 
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,
-      title: 'ClientFlow Pro',
+      title: 'Deskly',
       themeMode: themeMode,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,

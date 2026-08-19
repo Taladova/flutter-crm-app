@@ -6,6 +6,7 @@ import '../../../app/app_theme.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/app_empty_state.dart';
 import '../../../core/widgets/app_fade_in.dart';
+import '../../../core/widgets/app_search_field.dart';
 import '../../../core/widgets/section_title.dart';
 import '../../../data/models/task_model.dart';
 import '../providers/task_providers.dart';
@@ -18,6 +19,7 @@ class TasksPage extends ConsumerStatefulWidget {
 }
 
 class _TasksPageState extends ConsumerState<TasksPage> {
+  final TextEditingController searchController = TextEditingController();
   String selectedFilter = 'Toutes';
 
   final List<String> filters = const [
@@ -27,9 +29,24 @@ class _TasksPageState extends ConsumerState<TasksPage> {
     'Terminé',
   ];
 
+  @override
+  void dispose() {
+    searchController.dispose();
+    super.dispose();
+  }
+
   List<TaskModel> filterTasks(List<TaskModel> tasks) {
+    final query = searchController.text.toLowerCase();
+
     return tasks.where((task) {
-      return selectedFilter == 'Toutes' || task.status == selectedFilter;
+      final matchesSearch =
+          task.title.toLowerCase().contains(query) ||
+          task.projectName.toLowerCase().contains(query);
+
+      final matchesFilter =
+          selectedFilter == 'Toutes' || task.status == selectedFilter;
+
+      return matchesSearch && matchesFilter;
     }).toList();
   }
 
@@ -44,13 +61,13 @@ class _TasksPageState extends ConsumerState<TasksPage> {
           loading: () => const Center(
             child: CircularProgressIndicator(),
           ),
-          error: (error, stackTrace) => Center(
-            child: Text(
-              'Erreur de chargement des tâches',
-              style: TextStyle(
-                color: AppTheme.mainTextColor(context),
-                fontWeight: FontWeight.w700,
-              ),
+          error: (error, stackTrace) => Padding(
+            padding: const EdgeInsets.all(20),
+            child: AppEmptyState(
+              icon: Icons.error_outline_rounded,
+              title: 'Erreur de chargement',
+              description: 'Impossible de charger les tâches pour le moment.',
+              onRetry: () => ref.invalidate(taskControllerProvider),
             ),
           ),
           data: (tasks) {
@@ -71,6 +88,12 @@ class _TasksPageState extends ConsumerState<TasksPage> {
                     doneTasks: doneTasks,
                   ),
                   const SizedBox(height: 24),
+                  AppSearchField(
+                    controller: searchController,
+                    onChanged: (_) => setState(() {}),
+                    hintText: 'Rechercher une tâche...',
+                  ),
+                  const SizedBox(height: 18),
                   _FilterChips(
                     filters: filters,
                     selectedFilter: selectedFilter,
@@ -88,7 +111,7 @@ class _TasksPageState extends ConsumerState<TasksPage> {
                       icon: Icons.task_alt_rounded,
                       title: 'Aucune tâche trouvée',
                       description:
-                          'Essayez un autre filtre pour afficher vos tâches.',
+                          'Essayez une autre recherche ou un autre filtre.',
                     )
                   else
                     Column(

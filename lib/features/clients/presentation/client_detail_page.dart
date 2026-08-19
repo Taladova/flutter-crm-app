@@ -53,11 +53,12 @@ class ClientDetailPage extends ConsumerWidget {
                           child: CircularProgressIndicator(),
                         ),
                       ),
-                      error: (error, stackTrace) => const AppEmptyState(
+                      error: (error, stackTrace) => AppEmptyState(
                         icon: Icons.error_outline_rounded,
                         title: 'Erreur',
                         description:
                             'Impossible de charger les projets du client.',
+                        onRetry: () => ref.invalidate(projectControllerProvider),
                       ),
                       data: (projects) {
                         final clientProjects = projects

@@ -1,13 +1,17 @@
 import 'package:clientflow_pro/core/widgets/app_empty_state.dart';
 import 'package:clientflow_pro/data/models/task_model.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/app_theme.dart';
 import '../../../data/models/project_model.dart';
+import '../../../data/providers/firestore_providers.dart';
+import '../../../data/services/project_pdf_service.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../auth/providers/auth_providers.dart';
 import '../providers/project_providers.dart';
 
 import '../../tasks/providers/task_providers.dart';
@@ -42,6 +46,12 @@ class ProjectDetailPage extends ConsumerWidget {
                       project: project,
                       percent: (project.progress * 100).round(),
                     ),
+                    const SizedBox(height: 14),
+                    _ExportPdfButton(
+                      onTap: () => _exportPdf(context, project, projectTasks),
+                    ),
+                    const SizedBox(height: 14),
+                    _ClientPortalCard(project: project, tasks: projectTasks),
                     const SizedBox(height: 24),
                     const _SectionTitle(title: 'Informations projet'),
                     const SizedBox(height: 14),
@@ -161,6 +171,21 @@ class _ProjectTaskCard extends ConsumerWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+Future<void> _exportPdf(
+  BuildContext context,
+  ProjectModel project,
+  List<TaskModel> tasks,
+) async {
+  try {
+    await ProjectPdfService.shareProjectReport(project: project, tasks: tasks);
+  } catch (_) {
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Impossible de générer le PDF pour le moment.')),
     );
   }
 }
@@ -365,6 +390,220 @@ class _ProjectHeroCard extends StatelessWidget {
               ),
             ],
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ExportPdfButton extends StatelessWidget {
+  const _ExportPdfButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          color: AppTheme.cardColor(context),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppTheme.borderColor(context)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.picture_as_pdf_rounded, color: AppTheme.primaryColor, size: 18),
+            const SizedBox(width: 8),
+            Text(
+              'Exporter en PDF',
+              style: TextStyle(
+                color: AppTheme.primaryColor,
+                fontWeight: FontWeight.w900,
+                fontSize: 13,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ClientPortalCard extends ConsumerWidget {
+  const _ClientPortalCard({required this.project, required this.tasks});
+
+  final ProjectModel project;
+  final List<TaskModel> tasks;
+
+  Future<void> _publish(BuildContext context, WidgetRef ref) async {
+    final uid = ref.read(firebaseAuthProvider).currentUser?.uid;
+    if (uid == null) return;
+
+    try {
+      final token = await ref.read(sharedProjectServiceProvider).publish(
+            ownerUid: uid,
+            project: project,
+            tasks: tasks,
+          );
+
+      await ref
+          .read(projectControllerProvider.notifier)
+          .updateProject(project.copyWith(shareToken: token));
+
+      if (!context.mounted) return;
+      _showCodeDialog(context, token);
+    } catch (_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Impossible de créer l\'accès client pour le moment.')),
+      );
+    }
+  }
+
+  Future<void> _revoke(BuildContext context, WidgetRef ref) async {
+    try {
+      await ref.read(sharedProjectServiceProvider).revoke(project.shareToken);
+
+      await ref
+          .read(projectControllerProvider.notifier)
+          .updateProject(project.copyWith(shareToken: ''));
+
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Accès client révoqué.')),
+      );
+    } catch (_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Impossible de révoquer l\'accès pour le moment.')),
+      );
+    }
+  }
+
+  void _showCodeDialog(BuildContext context, String token) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Accès client créé'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Communiquez ce code à votre client. Depuis l\'app Deskly, il pourra '
+              'suivre l\'avancement de ce projet sans créer de compte.',
+            ),
+            const SizedBox(height: 16),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                token,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, letterSpacing: 3),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () async {
+              await Clipboard.setData(ClipboardData(text: token));
+              if (dialogContext.mounted) Navigator.pop(dialogContext);
+            },
+            child: const Text('Copier le code'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Fermer'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isShared = project.isShared;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: AppTheme.cardColor(context),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppTheme.borderColor(context)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.people_alt_rounded, color: AppTheme.primaryColor, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                'Espace client',
+                style: TextStyle(
+                  fontWeight: FontWeight.w900,
+                  fontSize: 14,
+                  color: AppTheme.mainTextColor(context),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            isShared
+                ? 'Votre client peut suivre ce projet avec le code ${project.shareToken}.'
+                : 'Générez un code pour que votre client suive l\'avancement sans créer de compte.',
+            style: TextStyle(
+              fontSize: 12.5,
+              color: AppTheme.secondaryTextColor(context),
+              height: 1.5,
+            ),
+          ),
+          const SizedBox(height: 14),
+          if (isShared)
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () async {
+                      await Clipboard.setData(ClipboardData(text: project.shareToken));
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Code copié.')),
+                      );
+                    },
+                    child: const Text('Copier le code'),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: TextButton(
+                    onPressed: () => _revoke(context, ref),
+                    style: TextButton.styleFrom(foregroundColor: const Color(0xFFDC2626)),
+                    child: const Text('Révoquer'),
+                  ),
+                ),
+              ],
+            )
+          else
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => _publish(context, ref),
+                child: const Text('Créer un accès client'),
+              ),
+            ),
         ],
       ),
     );

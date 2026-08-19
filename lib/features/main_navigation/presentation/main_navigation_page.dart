@@ -8,14 +8,16 @@ import '../../settings/presentation/settings_page.dart';
 import '../../tasks/presentation/tasks_page.dart';
 
 class MainNavigationPage extends StatefulWidget {
-  const MainNavigationPage({super.key});
+  const MainNavigationPage({super.key, this.initialIndex = 0});
+
+  final int initialIndex;
 
   @override
   State<MainNavigationPage> createState() => _MainNavigationPageState();
 }
 
 class _MainNavigationPageState extends State<MainNavigationPage> {
-  int currentIndex = 0;
+  late int currentIndex = widget.initialIndex.clamp(0, 4);
 
   final List<Widget> pages = const [
     DashboardPage(),

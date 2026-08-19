@@ -6,6 +6,7 @@ import '../../../app/app_theme.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/app_empty_state.dart';
 import '../../../core/widgets/app_fade_in.dart';
+import '../../../core/widgets/app_search_field.dart';
 import '../../../core/widgets/app_status_badge.dart';
 import '../../../core/widgets/section_title.dart';
 import '../../../data/models/project_model.dart';
@@ -19,6 +20,7 @@ class ProjectsPage extends ConsumerStatefulWidget {
 }
 
 class _ProjectsPageState extends ConsumerState<ProjectsPage> {
+  final TextEditingController searchController = TextEditingController();
   String selectedFilter = 'Tous';
 
   final List<String> filters = const [
@@ -29,9 +31,24 @@ class _ProjectsPageState extends ConsumerState<ProjectsPage> {
     'Planifié',
   ];
 
+  @override
+  void dispose() {
+    searchController.dispose();
+    super.dispose();
+  }
+
   List<ProjectModel> filterProjects(List<ProjectModel> projects) {
+    final query = searchController.text.toLowerCase();
+
     return projects.where((project) {
-      return selectedFilter == 'Tous' || project.status == selectedFilter;
+      final matchesSearch =
+          project.title.toLowerCase().contains(query) ||
+          project.clientName.toLowerCase().contains(query);
+
+      final matchesFilter =
+          selectedFilter == 'Tous' || project.status == selectedFilter;
+
+      return matchesSearch && matchesFilter;
     }).toList();
   }
 
@@ -51,15 +68,22 @@ class _ProjectsPageState extends ConsumerState<ProjectsPage> {
               const SizedBox(height: 24),
               projectsAsync.when(
                 loading: () => const _SummaryLoadingCard(),
-                error: (error, stackTrace) => const AppEmptyState(
+                error: (error, stackTrace) => AppEmptyState(
                   icon: Icons.error_outline_rounded,
                   title: 'Erreur de chargement',
                   description:
                       'Impossible de charger les projets pour le moment.',
+                  onRetry: () => ref.invalidate(projectControllerProvider),
                 ),
                 data: (projects) => _ProjectSummaryCard(projects: projects),
               ),
               const SizedBox(height: 24),
+              AppSearchField(
+                controller: searchController,
+                onChanged: (_) => setState(() {}),
+                hintText: 'Rechercher un projet...',
+              ),
+              const SizedBox(height: 18),
               _FilterChips(
                 filters: filters,
                 selectedFilter: selectedFilter,
@@ -79,11 +103,12 @@ class _ProjectsPageState extends ConsumerState<ProjectsPage> {
                     child: CircularProgressIndicator(),
                   ),
                 ),
-                error: (error, stackTrace) => const AppEmptyState(
+                error: (error, stackTrace) => AppEmptyState(
                   icon: Icons.error_outline_rounded,
                   title: 'Erreur de chargement',
                   description:
                       'Impossible de charger les projets pour le moment.',
+                  onRetry: () => ref.invalidate(projectControllerProvider),
                 ),
                 data: (projects) {
                   final filteredProjects = filterProjects(projects);
@@ -93,7 +118,7 @@ class _ProjectsPageState extends ConsumerState<ProjectsPage> {
                       icon: Icons.work_off_rounded,
                       title: 'Aucun projet trouvé',
                       description:
-                          'Essayez un autre filtre pour afficher vos projets.',
+                          'Essayez une autre recherche ou un autre filtre.',
                     );
                   }
 

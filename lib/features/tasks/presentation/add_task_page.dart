@@ -114,7 +114,7 @@ class _AddTaskPageState extends ConsumerState<AddTaskPage> {
     if (widget.isEditing) {
       context.pop();
     } else {
-      context.go('/tasks');
+      context.go('/main?tab=3');
     }
   }
 

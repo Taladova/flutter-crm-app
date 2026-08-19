@@ -106,9 +106,9 @@ class TaskController extends AsyncNotifier<List<TaskModel>> {
     await ref.read(taskRepositoryProvider).deleteTask(id);
   }
 
-  Future<void> resetTasks() async {
+  Future<void> clearTasks() async {
     final repository = ref.read(taskRepositoryProvider);
-    await repository.resetTasks();
-    state = AsyncValue.data(await repository.getTasks());
+    await repository.clearTasks();
+    state = const AsyncValue.data([]);
   }
 }

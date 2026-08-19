@@ -71,9 +71,9 @@ class ClientController extends AsyncNotifier<List<ClientModel>> {
     await ref.read(clientRepositoryProvider).deleteClient(id);
   }
 
-  Future<void> resetClients() async {
+  Future<void> clearClients() async {
     final repository = ref.read(clientRepositoryProvider);
-    await repository.resetClients();
-    state = AsyncValue.data(await repository.getClients());
+    await repository.clearClients();
+    state = const AsyncValue.data([]);
   }
 }

@@ -9,6 +9,7 @@ class ProjectModel {
     required this.deadline,
     required this.progress,
     this.notes = '',
+    this.shareToken = '',
   });
 
   final String id;
@@ -20,8 +21,11 @@ class ProjectModel {
   final String deadline;
   final double progress;
   final String notes;
+  final String shareToken;
 
-  ProjectModel copyWith({String? notes}) {
+  bool get isShared => shareToken.isNotEmpty;
+
+  ProjectModel copyWith({String? notes, String? shareToken}) {
     return ProjectModel(
       id: id,
       title: title,
@@ -32,6 +36,7 @@ class ProjectModel {
       deadline: deadline,
       progress: progress,
       notes: notes ?? this.notes,
+      shareToken: shareToken ?? this.shareToken,
     );
   }
 
@@ -46,6 +51,7 @@ class ProjectModel {
       'deadline': deadline,
       'progress': progress,
       'notes': notes,
+      'shareToken': shareToken,
     };
   }
 
@@ -60,6 +66,7 @@ class ProjectModel {
       deadline: json['deadline'] ?? '',
       progress: (json['progress'] ?? 0.0).toDouble(),
       notes: json['notes'] ?? '',
+      shareToken: json['shareToken'] ?? '',
     );
   }
 }

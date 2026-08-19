@@ -9,11 +9,13 @@ class AppEmptyState extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.description,
+    this.onRetry,
   });
 
   final IconData icon;
   final String title;
   final String description;
+  final VoidCallback? onRetry;
 
   @override
   Widget build(BuildContext context) {
@@ -41,6 +43,17 @@ class AppEmptyState extends StatelessWidget {
               fontWeight: FontWeight.w600,
             ),
           ),
+          if (onRetry != null) ...[
+            const SizedBox(height: 18),
+            TextButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh_rounded, size: 18),
+              label: const Text('Réessayer'),
+              style: TextButton.styleFrom(
+                foregroundColor: AppTheme.primaryColor,
+              ),
+            ),
+          ],
         ],
       ),
     );

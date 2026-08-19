@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/app_theme.dart';
 import '../../../core/utils/onboarding_prefs.dart';
+import '../../../core/widgets/deskly_logo.dart';
 
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
@@ -33,7 +34,7 @@ class _SplashPageState extends State<SplashPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.primaryColor,
+      backgroundColor: AppTheme.midnight,
       body: SafeArea(
         child: Center(
           child: Padding(
@@ -41,33 +42,13 @@ class _SplashPageState extends State<SplashPage> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Container(
-                  width: 96,
-                  height: 96,
-                  decoration: BoxDecoration(
-                    color: AppTheme.cardColor(context),
-                    borderRadius: BorderRadius.circular(28),
-                    boxShadow: [
-                      BoxShadow(
-                        // ignore: deprecated_member_use
-                        color: Colors.black.withValues(alpha: 0.12),
-                        blurRadius: 24,
-                        offset: const Offset(0, 12),
-                      ),
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.business_center_rounded,
-                    size: 48,
-                    color: AppTheme.primaryColor,
-                  ),
-                ),
+                const DesklyLogo(size: 96),
                 const SizedBox(height: 28),
-                Text(
-                  'ClientFlow Pro',
+                const Text(
+                  'deskly',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: AppTheme.cardColor(context),
+                    color: Colors.white,
                     fontSize: 34,
                     fontWeight: FontWeight.w800,
                     letterSpacing: -0.5,
@@ -78,8 +59,7 @@ class _SplashPageState extends State<SplashPage> {
                   'Gérez vos clients, vos projets\net votre activité avec clarté.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    // ignore: deprecated_member_use
-                    color: AppTheme.cardColor(context).withValues(alpha: 0.85),
+                    color: Colors.white.withValues(alpha: 0.7),
                     fontSize: 16,
                     height: 1.5,
                     fontWeight: FontWeight.w500,
@@ -92,8 +72,7 @@ class _SplashPageState extends State<SplashPage> {
                   child: CircularProgressIndicator(
                     strokeWidth: 3,
                     valueColor: AlwaysStoppedAnimation<Color>(
-                      // ignore: deprecated_member_use
-                      AppTheme.cardColor(context).withValues(alpha: 0.9),
+                      Colors.white.withValues(alpha: 0.85),
                     ),
                   ),
                 ),

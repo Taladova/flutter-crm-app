@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../services/firestore_service.dart';
+import '../services/shared_project_service.dart';
 import '../../features/auth/providers/auth_providers.dart';
 
 final firestoreProvider = Provider<FirebaseFirestore>((ref) {
@@ -13,4 +14,8 @@ final firestoreServiceProvider = Provider<FirestoreService>((ref) {
     firestore: ref.watch(firestoreProvider),
     auth: ref.watch(firebaseAuthProvider),
   );
+});
+
+final sharedProjectServiceProvider = Provider<SharedProjectService>((ref) {
+  return SharedProjectService(firestore: ref.watch(firestoreProvider));
 });

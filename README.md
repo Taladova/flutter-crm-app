@@ -1,4 +1,4 @@
-# 📱 ClientFlow Pro
+# 📱 Deskly
 
 Application mobile Flutter pour la gestion de clients, projets et tâches.
 
@@ -15,6 +15,7 @@ Application mobile Flutter pour la gestion de clients, projets et tâches.
 - Flutter
 - Riverpod (state management)
 - GoRouter (navigation)
+- Firebase Auth + Cloud Firestore
 - Architecture modulaire
 
 ## 📸 Screenshots

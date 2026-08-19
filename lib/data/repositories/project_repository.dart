@@ -1,6 +1,5 @@
 import '../models/project_model.dart';
 import '../services/firestore_service.dart';
-import '../mock/mock_projects.dart';
 
 class ProjectRepository {
   const ProjectRepository({
@@ -45,7 +44,7 @@ class ProjectRepository {
     await firestoreService.userCollection('projects').doc(id).delete();
   }
 
-  Future<void> resetProjects() async {
+  Future<void> clearProjects() async {
     final collection = firestoreService.userCollection('projects');
     final snapshot = await collection.get();
 
@@ -53,10 +52,6 @@ class ProjectRepository {
 
     for (final doc in snapshot.docs) {
       batch.delete(doc.reference);
-    }
-
-    for (final project in mockProjects) {
-      batch.set(collection.doc(project.id), project.toJson());
     }
 
     await batch.commit();

@@ -16,8 +16,10 @@ import '../features/projects/presentation/add_project_page.dart';
 import '../features/tasks/presentation/add_task_page.dart';
 import '../features/tasks/presentation/task_detail_page.dart';
 import '../features/auth/presentation/register_page.dart';
+import '../features/settings/presentation/legal_page.dart';
+import '../features/tracking/presentation/track_project_page.dart';
 
-const _publicRoutes = ['/', '/onboarding', '/login', '/register'];
+const _publicRoutes = ['/', '/onboarding', '/login', '/register', '/track'];
 
 class GoRouterRefreshStream extends ChangeNotifier {
   GoRouterRefreshStream(Stream<dynamic> stream) {
@@ -115,7 +117,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/main',
         name: 'main',
-        builder: (context, state) => const MainNavigationPage(),
+        builder: (context, state) {
+          final tab = int.tryParse(state.uri.queryParameters['tab'] ?? '') ?? 0;
+          return MainNavigationPage(initialIndex: tab);
+        },
       ),
       GoRoute(
         path: '/clients/add',
@@ -231,6 +236,26 @@ final routerProvider = Provider<GoRouter>((ref) {
           return buildSlideTransitionPage(
             state: state,
             child: const RegisterPage(),
+          );
+        },
+      ),
+      GoRoute(
+        path: '/legal',
+        name: 'legal',
+        pageBuilder: (context, state) {
+          return buildSlideTransitionPage(
+            state: state,
+            child: const LegalPage(),
+          );
+        },
+      ),
+      GoRoute(
+        path: '/track',
+        name: 'track',
+        pageBuilder: (context, state) {
+          return buildSlideTransitionPage(
+            state: state,
+            child: const TrackProjectPage(),
           );
         },
       ),

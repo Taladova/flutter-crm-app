@@ -1,6 +1,5 @@
 import '../models/task_model.dart';
 import '../services/firestore_service.dart';
-import '../mock/mock_tasks.dart';
 
 class TaskRepository {
   const TaskRepository({
@@ -45,7 +44,7 @@ class TaskRepository {
     await firestoreService.userCollection('tasks').doc(id).delete();
   }
 
-  Future<void> resetTasks() async {
+  Future<void> clearTasks() async {
     final collection = firestoreService.userCollection('tasks');
     final snapshot = await collection.get();
 
@@ -53,10 +52,6 @@ class TaskRepository {
 
     for (final doc in snapshot.docs) {
       batch.delete(doc.reference);
-    }
-
-    for (final task in mockTasks) {
-      batch.set(collection.doc(task.id), task.toJson());
     }
 
     await batch.commit();

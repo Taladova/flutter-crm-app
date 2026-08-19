@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/app_theme.dart';
+import '../../../core/widgets/deskly_logo.dart';
 import '../../auth/providers/auth_providers.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
@@ -58,6 +59,53 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     }
   }
 
+  Future<void> _forgotPassword() async {
+    final controller = TextEditingController(text: emailController.text.trim());
+
+    final email = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Mot de passe oublié'),
+        content: TextField(
+          controller: controller,
+          keyboardType: TextInputType.emailAddress,
+          decoration: const InputDecoration(
+            labelText: 'Email',
+            hintText: 'exemple@email.com',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Annuler'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(dialogContext, controller.text.trim()),
+            child: const Text('Envoyer'),
+          ),
+        ],
+      ),
+    );
+
+    if (email == null || email.isEmpty) return;
+
+    try {
+      await ref.read(authServiceProvider).resetPassword(email);
+    } on FirebaseAuthException catch (error) {
+      if (error.code == 'invalid-email') {
+        if (!mounted) return;
+        showMessage('Adresse email invalide.');
+        return;
+      }
+    } catch (_) {
+      // Ignore other errors here on purpose: whether the account exists or
+      // not, the user sees the same confirmation message below.
+    }
+
+    if (!mounted) return;
+    showMessage('Si un compte existe avec cet email, un lien de réinitialisation a été envoyé.');
+  }
+
   String getFirebaseErrorMessage(String code) {
     switch (code) {
       case 'user-not-found':
@@ -92,7 +140,27 @@ class _LoginPageState extends ConsumerState<LoginPage> {
               _buildHeader(context),
               const SizedBox(height: 42),
               _buildForm(),
-              const SizedBox(height: 28),
+              const SizedBox(height: 10),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: _forgotPassword,
+                  style: TextButton.styleFrom(
+                    padding: EdgeInsets.zero,
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: const Text(
+                    'Mot de passe oublié ?',
+                    style: TextStyle(
+                      color: AppTheme.primaryColor,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
               _buildLoginButton(),
               const SizedBox(height: 22),
               _buildFooter(),
@@ -107,26 +175,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          width: 62,
-          height: 62,
-          decoration: BoxDecoration(
-            color: AppTheme.primaryColor,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: AppTheme.primaryColor.withValues(alpha: 0.28),
-                blurRadius: 24,
-                offset: const Offset(0, 14),
-              ),
-            ],
-          ),
-          child: Icon(
-            Icons.business_center_rounded,
-            color: AppTheme.cardColor(context),
-            size: 30,
-          ),
-        ),
+        const DesklyLogo(size: 62),
         const SizedBox(height: 32),
         Text(
           'Bon retour 👋',
@@ -207,31 +256,49 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   }
 
   Widget _buildFooter() {
-    return Center(
-      child: Wrap(
-        alignment: WrapAlignment.center,
-        children: [
-          Text(
-            'Vous n’avez pas encore de compte ? ',
-            style: TextStyle(
-              color: AppTheme.secondaryTextColor(context),
-              fontWeight: FontWeight.w500,
-            ),
+    return Column(
+      children: [
+        Center(
+          child: Wrap(
+            alignment: WrapAlignment.center,
+            children: [
+              Text(
+                'Vous n’avez pas encore de compte ? ',
+                style: TextStyle(
+                  color: AppTheme.secondaryTextColor(context),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              GestureDetector(
+                onTap: () {
+                  context.push('/register');
+                },
+                child: const Text(
+                  'Créer un compte',
+                  style: TextStyle(
+                    color: AppTheme.primaryColor,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
           ),
-          GestureDetector(
-            onTap: () {
-              context.push('/register');
-            },
-            child: const Text(
-              'Créer un compte',
+        ),
+        const SizedBox(height: 14),
+        Center(
+          child: GestureDetector(
+            onTap: () => context.push('/track'),
+            child: Text(
+              'Vous êtes client d\'un prestataire ? Suivre un projet',
               style: TextStyle(
-                color: AppTheme.primaryColor,
-                fontWeight: FontWeight.w800,
+                color: AppTheme.secondaryTextColor(context),
+                fontWeight: FontWeight.w600,
+                fontSize: 12.5,
               ),
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

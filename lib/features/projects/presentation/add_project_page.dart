@@ -114,7 +114,7 @@ class _AddProjectPageState extends ConsumerState<AddProjectPage> {
     if (widget.isEditing) {
       context.pop();
     } else {
-      context.go('/projects');
+      context.go('/main?tab=2');
     }
   }
 

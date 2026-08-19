@@ -70,9 +70,9 @@ class ProjectController extends AsyncNotifier<List<ProjectModel>> {
     await ref.read(projectRepositoryProvider).deleteProject(id);
   }
 
-  Future<void> resetProjects() async {
+  Future<void> clearProjects() async {
     final repository = ref.read(projectRepositoryProvider);
-    await repository.resetProjects();
-    state = AsyncValue.data(await repository.getProjects());
+    await repository.clearProjects();
+    state = const AsyncValue.data([]);
   }
 }

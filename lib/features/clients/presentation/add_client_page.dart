@@ -99,7 +99,7 @@ class _AddClientPageState extends ConsumerState<AddClientPage> {
     if (widget.isEditing) {
       context.pop();
     } else {
-      context.go('/clients');
+      context.go('/main?tab=1');
     }
   }
 

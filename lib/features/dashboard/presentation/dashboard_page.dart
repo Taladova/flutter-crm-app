@@ -44,7 +44,7 @@ class DashboardPage extends ConsumerWidget {
                   ? SectionTitle(
                       title: 'Projets récents',
                       actionText: 'Voir tout',
-                      onActionTap: () => context.go('/projects'),
+                      onActionTap: () => context.go('/main?tab=2'),
                     )
                   : const SectionTitle(title: 'Projets récents'),
               const SizedBox(height: 14),
@@ -54,7 +54,7 @@ class DashboardPage extends ConsumerWidget {
                   ? SectionTitle(
                       title: 'Tâches urgentes',
                       actionText: 'Voir tout',
-                      onActionTap: () => context.go('/tasks'),
+                      onActionTap: () => context.go('/main?tab=3'),
                     )
                   : const SectionTitle(title: 'Tâches urgentes'),
               const SizedBox(height: 14),

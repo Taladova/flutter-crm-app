@@ -96,7 +96,7 @@ class SettingsPage extends ConsumerWidget {
                         builder: (dialogContext) => AlertDialog(
                           title: const Text('Langue'),
                           content: const Text(
-                            'ClientFlow Pro est disponible en français pour le moment. '
+                            'Deskly est disponible en français pour le moment. '
                             'D\'autres langues seront ajoutées prochainement.',
                           ),
                           actions: [
@@ -122,49 +122,103 @@ class SettingsPage extends ConsumerWidget {
                   const _SettingsTile(
                     icon: Icons.cloud_sync_rounded,
                     title: 'Synchronisation cloud',
-                    subtitle: 'Préparé pour Firebase',
-                    trailing: _ComingSoonBadge(),
-                  ),
-                  const _SettingsTile(
-                    icon: Icons.people_alt_rounded,
-                    title: 'Espace client',
-                    subtitle: 'Accès client au suivi projet',
-                    trailing: _ComingSoonBadge(),
-                  ),
-                  const _SettingsTile(
-                    icon: Icons.picture_as_pdf_rounded,
-                    title: 'Export PDF',
-                    subtitle: 'Devis, avancement et rapport projet',
-                    trailing: _ComingSoonBadge(),
+                    subtitle: 'Vos données sont sauvegardées en temps réel',
+                    trailing: _ActiveBadge(),
                   ),
                   _SettingsTile(
-                    icon: Icons.restart_alt_rounded,
-                    title: 'Réinitialiser la démo',
-                    subtitle: 'Restaurer les données de départ',
+                    icon: Icons.people_alt_rounded,
+                    title: 'Espace client',
+                    subtitle: 'Ouvrez un projet pour créer un accès client',
                     trailing: Icon(
                       Icons.arrow_forward_ios_rounded,
                       size: 16,
                       color: AppTheme.secondaryTextColor(context),
                     ),
+                    onTap: () => context.go('/main?tab=2'),
+                  ),
+                  _SettingsTile(
+                    icon: Icons.picture_as_pdf_rounded,
+                    title: 'Export PDF',
+                    subtitle: 'Ouvrez un projet pour exporter son rapport',
+                    trailing: Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      size: 16,
+                      color: AppTheme.secondaryTextColor(context),
+                    ),
+                    onTap: () => context.go('/main?tab=2'),
+                  ),
+                  _SettingsTile(
+                    icon: Icons.delete_sweep_rounded,
+                    title: 'Supprimer toutes mes données',
+                    subtitle: 'Efface définitivement clients, projets et tâches',
+                    trailing: const Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      size: 16,
+                      color: Color(0xFFDC2626),
+                    ),
                     onTap: () async {
+                      final confirmed = await showDialog<bool>(
+                        context: context,
+                        builder: (dialogContext) => AlertDialog(
+                          title: const Text('Supprimer toutes les données ?'),
+                          content: const Text(
+                            'Tous vos clients, projets et tâches seront définitivement '
+                            'supprimés. Cette action est irréversible.',
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(dialogContext, false),
+                              child: const Text('Annuler'),
+                            ),
+                            TextButton(
+                              onPressed: () => Navigator.pop(dialogContext, true),
+                              child: const Text(
+                                'Tout supprimer',
+                                style: TextStyle(color: Color(0xFFDC2626)),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+
+                      if (confirmed != true) return;
+
                       await ref
                           .read(clientControllerProvider.notifier)
-                          .resetClients();
+                          .clearClients();
                       await ref
                           .read(projectControllerProvider.notifier)
-                          .resetProjects();
+                          .clearProjects();
                       await ref
                           .read(taskControllerProvider.notifier)
-                          .resetTasks();
+                          .clearTasks();
 
                       if (!context.mounted) return;
 
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text('Données de démo réinitialisées.'),
+                          content: Text('Toutes vos données ont été supprimées.'),
                         ),
                       );
                     },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              Text('Légal', style: Theme.of(context).textTheme.titleLarge),
+              const SizedBox(height: 14),
+              _SettingsSection(
+                children: [
+                  _SettingsTile(
+                    icon: Icons.privacy_tip_outlined,
+                    title: 'Confidentialité & mentions légales',
+                    subtitle: 'Données collectées, sécurité, vos droits',
+                    trailing: Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      size: 16,
+                      color: AppTheme.secondaryTextColor(context),
+                    ),
+                    onTap: () => context.push('/legal'),
                   ),
                 ],
               ),
@@ -186,7 +240,7 @@ class SettingsPage extends ConsumerWidget {
               const SizedBox(height: 24),
               Center(
                 child: Text(
-                  'ClientFlow Pro • Version 1.0.0',
+                  'Deskly • Version 1.0.0',
                   style: TextStyle(
                     color: AppTheme.secondaryTextColor(context),
                     fontSize: 12,
@@ -251,7 +305,7 @@ class _SettingsHeader extends ConsumerWidget {
             if (value == 'about') {
               showAboutDialog(
                 context: context,
-                applicationName: 'ClientFlow Pro',
+                applicationName: 'Deskly',
                 applicationVersion: '1.0.0',
               );
             }
@@ -487,21 +541,21 @@ class _SettingsTile extends StatelessWidget {
   }
 }
 
-class _ComingSoonBadge extends StatelessWidget {
-  const _ComingSoonBadge();
+class _ActiveBadge extends StatelessWidget {
+  const _ActiveBadge();
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
       decoration: BoxDecoration(
-        color: AppTheme.primaryColor.withValues(alpha: 0.12),
+        color: const Color(0xFF16A34A).withValues(alpha: 0.14),
         borderRadius: BorderRadius.circular(100),
       ),
       child: const Text(
-        'Bientôt',
+        'Actif',
         style: TextStyle(
-          color: AppTheme.primaryColor,
+          color: Color(0xFF16A34A),
           fontSize: 11,
           fontWeight: FontWeight.w900,
         ),

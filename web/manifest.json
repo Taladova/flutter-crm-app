@@ -1,11 +1,11 @@
 {
-    "name": "clientflow_pro",
-    "short_name": "clientflow_pro",
+    "name": "Deskly",
+    "short_name": "Deskly",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#0A0E27",
+    "theme_color": "#0A0E27",
+    "description": "Deskly — gestion de clients, projets et tâches pour freelances et agences.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

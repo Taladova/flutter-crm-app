@@ -1,20 +1,30 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  static const Color primaryColor = Color(0xFF1C9E85);
+  static const Color violet = Color(0xFF7C5CFF);
+  static const Color azure = Color(0xFF4C6FFF);
+  static const Color midnight = Color(0xFF0A0E27);
+
+  static const Color primaryColor = violet;
+
+  static const LinearGradient brandGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [violet, azure],
+  );
 
   static const Color backgroundColor = Color(0xFFF8FAFC);
-  static const Color darkBackgroundColor = Color(0xFF000B27);
+  static const Color darkBackgroundColor = midnight;
 
   static const Color darkTextColor = Color(0xFF0F172A);
   static const Color lightTextColor = Color(0xFFFFFFFF);
   static const Color greyTextColor = Color(0xFF64748B);
 
   static const Color lightCardColor = Colors.white;
-  static const Color darkCardColor = Color(0xFF071633);
+  static const Color darkCardColor = Color(0xFF131938);
 
   static const Color lightBorderColor = Color(0xFFE2E8F0);
-  static const Color darkBorderColor = Color(0xFF1C2D4A);
+  static const Color darkBorderColor = Color(0xFF262E52);
 
   static ThemeData get lightTheme {
     return ThemeData(

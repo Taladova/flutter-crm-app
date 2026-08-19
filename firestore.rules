@@ -10,5 +10,18 @@ service cloud.firestore {
         allow read, write: if request.auth != null && request.auth.uid == userId;
       }
     }
+
+    // Read-only client portal snapshots. Anyone holding the exact share code
+    // can read a project's public status (title, progress, budget, deadline,
+    // task summary) — nothing else in the database is reachable this way.
+    // Only the freelancer who owns the underlying project may publish or
+    // revoke a snapshot.
+    match /shared_projects/{shareId} {
+      allow read: if true;
+      allow create: if request.auth != null
+        && request.resource.data.ownerUid == request.auth.uid;
+      allow update, delete: if request.auth != null
+        && resource.data.ownerUid == request.auth.uid;
+    }
   }
 }

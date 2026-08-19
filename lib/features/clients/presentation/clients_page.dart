@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../app/app_theme.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/app_empty_state.dart';
+import '../../../core/widgets/app_search_field.dart';
 import '../../../core/widgets/app_status_badge.dart';
 import '../../../core/widgets/section_title.dart';
 import '../../../data/models/client_model.dart';
@@ -65,9 +66,10 @@ class _ClientsPageState extends ConsumerState<ClientsPage> {
             children: [
               const _ClientsHeader(),
               const SizedBox(height: 24),
-              _SearchField(
+              AppSearchField(
                 controller: searchController,
                 onChanged: (_) => setState(() {}),
+                hintText: 'Rechercher un client...',
               ),
               const SizedBox(height: 18),
               _FilterChips(
@@ -89,11 +91,12 @@ class _ClientsPageState extends ConsumerState<ClientsPage> {
                     child: CircularProgressIndicator(),
                   ),
                 ),
-                error: (error, stackTrace) => const AppEmptyState(
+                error: (error, stackTrace) => AppEmptyState(
                   icon: Icons.error_outline_rounded,
                   title: 'Erreur de chargement',
                   description:
                       'Impossible de charger les clients pour le moment.',
+                  onRetry: () => ref.invalidate(clientControllerProvider),
                 ),
                 data: (clients) {
                   final filteredClients = filterClients(clients);
@@ -182,68 +185,6 @@ class _ClientsHeader extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _SearchField extends StatelessWidget {
-  const _SearchField({
-    required this.controller,
-    required this.onChanged,
-  });
-
-  final TextEditingController controller;
-  final ValueChanged<String> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final fieldColor = AppTheme.isDark(context)
-        ? const Color(0xFF000B27)
-        : AppTheme.cardColor(context);
-
-    return TextField(
-      controller: controller,
-      onChanged: onChanged,
-      style: TextStyle(
-        color: AppTheme.mainTextColor(context),
-        fontWeight: FontWeight.w700,
-      ),
-      decoration: InputDecoration(
-        hintText: 'Rechercher un client...',
-        prefixIcon: Icon(
-          Icons.search_rounded,
-          color: AppTheme.secondaryTextColor(context),
-        ),
-        filled: true,
-        fillColor: fieldColor,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 18,
-          vertical: 18,
-        ),
-        hintStyle: TextStyle(
-          color: AppTheme.secondaryTextColor(context),
-          fontWeight: FontWeight.w500,
-        ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
-          borderSide: BorderSide(
-            color: AppTheme.borderColor(context),
-          ),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
-          borderSide: BorderSide(
-            color: AppTheme.borderColor(context),
-          ),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
-          borderSide: const BorderSide(
-            color: AppTheme.primaryColor,
-            width: 1.5,
-          ),
-        ),
-      ),
     );
   }
 }
