@@ -13,14 +13,15 @@ class ClientFlowApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final themeModeAsync = ref.watch(themeModeProvider);
     final themeMode = themeModeAsync.value ?? ThemeMode.light;
+    final router = ref.watch(routerProvider);
 
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,
-      title: 'ClientFlow Pro',
+      title: 'Deskly',
       themeMode: themeMode,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      routerConfig: AppRouter.router,
+      routerConfig: router,
     );
   }
 }

@@ -1,6 +1,5 @@
 import '../models/client_model.dart';
 import '../services/firestore_service.dart';
-import '../mock/mock_clients.dart';
 
 class ClientRepository {
   const ClientRepository({required this.firestoreService});
@@ -44,7 +43,18 @@ class ClientRepository {
     return ClientModel.fromJson(doc.data()!);
   }
 
-  Future<void> resetClients() async {
+  Future<void> updateClient(ClientModel client) async {
+    await firestoreService
+        .userCollection('clients')
+        .doc(client.id)
+        .set(client.toJson());
+  }
+
+  Future<void> deleteClient(String id) async {
+    await firestoreService.userCollection('clients').doc(id).delete();
+  }
+
+  Future<void> clearClients() async {
     final collection = firestoreService.userCollection('clients');
     final snapshot = await collection.get();
 
@@ -52,10 +62,6 @@ class ClientRepository {
 
     for (final doc in snapshot.docs) {
       batch.delete(doc.reference);
-    }
-
-    for (final client in mockClients) {
-      batch.set(collection.doc(client.id), client.toJson());
     }
 
     await batch.commit();

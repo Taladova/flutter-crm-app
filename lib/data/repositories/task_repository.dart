@@ -2,9 +2,7 @@ import '../models/task_model.dart';
 import '../services/firestore_service.dart';
 
 class TaskRepository {
-  const TaskRepository({
-    required this.firestoreService,
-  });
+  const TaskRepository({required this.firestoreService});
 
   final FirestoreService firestoreService;
 
@@ -30,7 +28,21 @@ class TaskRepository {
         .set(task.toJson());
   }
 
-  Future<void> resetTasks() async {
+  Future<TaskModel?> getTaskById(String id) async {
+    final doc = await firestoreService.userCollection('tasks').doc(id).get();
+
+    if (!doc.exists || doc.data() == null) {
+      return null;
+    }
+
+    return TaskModel.fromJson(doc.data()!);
+  }
+
+  Future<void> deleteTask(String id) async {
+    await firestoreService.userCollection('tasks').doc(id).delete();
+  }
+
+  Future<void> clearTasks() async {
     final collection = firestoreService.userCollection('tasks');
     final snapshot = await collection.get();
 

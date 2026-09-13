@@ -1,0 +1,513 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isSelf(userId) {
+      return signedIn() && request.auth.uid == userId;
+    }
+
+    function isAllowedClientProject(professionalId, projectId) {
+      return signedIn()
+        && exists(/databases/$(database)/documents/client_accounts/$(request.auth.uid))
+        && get(/databases/$(database)/documents/client_accounts/$(request.auth.uid)).data.professionalId == professionalId
+        && (
+          (
+            exists(/databases/$(database)/documents/client_accounts/$(request.auth.uid)/projects/$(projectId))
+            && get(/databases/$(database)/documents/client_accounts/$(request.auth.uid)/projects/$(projectId)).data.professionalId == professionalId
+          )
+          || (
+            get(/databases/$(database)/documents/client_accounts/$(request.auth.uid)).data.projectIds is list
+            && projectId in get(/databases/$(database)/documents/client_accounts/$(request.auth.uid)).data.projectIds
+          )
+          || (
+            exists(/databases/$(database)/documents/users/$(professionalId)/projects/$(projectId))
+            && get(/databases/$(database)/documents/users/$(professionalId)/projects/$(projectId)).data.clientId is string
+            && get(/databases/$(database)/documents/users/$(professionalId)/projects/$(projectId)).data.clientId == get(/databases/$(database)/documents/client_accounts/$(request.auth.uid)).data.clientId
+          )
+        );
+    }
+
+    function signedInClientId() {
+      return get(/databases/$(database)/documents/client_accounts/$(request.auth.uid)).data.clientId;
+    }
+
+    function isSharedClientProject(professionalId, clientId, projectId, sharedClientId) {
+      return sharedClientId is string
+        && sharedClientId != ''
+        && exists(/databases/$(database)/documents/shared_clients/$(sharedClientId))
+        && (
+          get(/databases/$(database)/documents/shared_clients/$(sharedClientId)).data.ownerUid == professionalId
+          || get(/databases/$(database)/documents/shared_clients/$(sharedClientId)).data.professionalId == professionalId
+        )
+        && get(/databases/$(database)/documents/shared_clients/$(sharedClientId)).data.clientId == clientId
+        && (
+          (
+            get(/databases/$(database)/documents/shared_clients/$(sharedClientId)).data.projectIds is list
+            && projectId in get(/databases/$(database)/documents/shared_clients/$(sharedClientId)).data.projectIds
+          )
+          || (
+            exists(/databases/$(database)/documents/users/$(professionalId)/projects/$(projectId))
+            && get(/databases/$(database)/documents/users/$(professionalId)/projects/$(projectId)).data.clientId == clientId
+          )
+        );
+    }
+
+    function isSharedClientLinkedProject(professionalId, clientId, projectId) {
+      return signedIn()
+        && exists(/databases/$(database)/documents/client_accounts/$(request.auth.uid))
+        && get(/databases/$(database)/documents/client_accounts/$(request.auth.uid)).data.professionalId == professionalId
+        && get(/databases/$(database)/documents/client_accounts/$(request.auth.uid)).data.clientId == clientId
+        && isSharedClientProject(
+          professionalId,
+          clientId,
+          projectId,
+          get(/databases/$(database)/documents/client_accounts/$(request.auth.uid)).data.sharedClientId
+        );
+    }
+
+    function resourceOwnedByProfessional(userId) {
+      return resource.data.professionalUid == userId
+        || resource.data.professionalId == userId
+        || resource.data.ownerUid == userId;
+    }
+
+    // A client whose client_accounts record points at this professional may
+    // read the professional's own profile doc (needed so the client portal
+    // can show "linked to <professional name>").
+    function isLinkedClient(professionalId) {
+      return signedIn()
+        && exists(/databases/$(database)/documents/client_accounts/$(request.auth.uid))
+        && get(/databases/$(database)/documents/client_accounts/$(request.auth.uid)).data.professionalId == professionalId;
+    }
+
+    // True when the signed-in client's own client_accounts record points at
+    // ownerUid — i.e. they are creating/using *their own* shared_clients
+    // conversation with the professional who owns them, never someone else's.
+    function isOwnSharedClientSpace(ownerUid, clientUid) {
+      return isLinkedClient(ownerUid) && clientUid == request.auth.uid;
+    }
+
+    function canReadLinkedClientProject(professionalId, projectId) {
+      return isLinkedClient(professionalId)
+        && (
+          (
+            resource.data.clientId is string
+            && resource.data.clientId == get(/databases/$(database)/documents/client_accounts/$(request.auth.uid)).data.clientId
+          )
+          || (
+            get(/databases/$(database)/documents/client_accounts/$(request.auth.uid)).data.projectIds is list
+            && projectId in get(/databases/$(database)/documents/client_accounts/$(request.auth.uid)).data.projectIds
+          )
+        );
+    }
+
+    match /users/{userId} {
+      allow read: if isSelf(userId) || isLinkedClient(userId);
+      allow update, delete: if isSelf(userId);
+      allow create: if isSelf(userId);
+
+      match /{collection}/{docId} {
+        allow read, write: if isSelf(userId);
+      }
+
+      match /projects/{projectId} {
+        allow read: if isSelf(userId)
+          || canReadLinkedClientProject(userId, projectId);
+        allow write: if isSelf(userId);
+      }
+
+      match /project_actions/{actionId} {
+        allow read: if isSelf(userId)
+          || (
+            signedIn()
+            && resource.data.projectId is string
+            && resource.data.professionalUid == userId
+            && resource.data.visibleToClient == true
+            && isAllowedClientProject(userId, resource.data.projectId)
+          );
+        allow create, delete: if isSelf(userId);
+        allow update: if isSelf(userId)
+          || (
+            signedIn()
+            && resource.data.projectId is string
+            && resourceOwnedByProfessional(userId)
+            && resource.data.clientId == signedInClientId()
+            && resource.data.assignedTo == 'client'
+            && resource.data.visibleToClient == true
+            && resource.data.status == 'pending'
+            && isAllowedClientProject(userId, resource.data.projectId)
+            && isSharedClientLinkedProject(
+              userId,
+              resource.data.clientId,
+              resource.data.projectId
+            )
+            && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['status', 'completedAt', 'updatedAt'])
+            && request.resource.data.status == 'completed'
+          );
+      }
+
+      match /tasks/{taskId} {
+        allow read: if isSelf(userId)
+          || (
+            signedIn()
+            && resource.data.projectId is string
+            && resource.data.internal != true
+            && resource.data.private != true
+            && isAllowedClientProject(userId, resource.data.projectId)
+          );
+        allow create, update, delete: if isSelf(userId);
+      }
+
+      match /document_requests/{requestId} {
+        allow read: if isSelf(userId)
+          || (
+            signedIn()
+            && resource.data.projectId is string
+            && isAllowedClientProject(userId, resource.data.projectId)
+          );
+        allow create: if isSelf(userId)
+          && request.resource.data.professionalUid == request.auth.uid;
+        allow update: if (
+            isSelf(userId)
+            && request.resource.data.professionalUid == request.auth.uid
+          ) || (
+            signedIn()
+            && resource.data.projectId is string
+            && resourceOwnedByProfessional(userId)
+            && resource.data.clientId == signedInClientId()
+            && isAllowedClientProject(userId, resource.data.projectId)
+            && isSharedClientLinkedProject(
+              userId,
+              resource.data.clientId,
+              resource.data.projectId
+            )
+            && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly([
+                'status',
+                'uploadedDocumentId',
+                'clientUid',
+                'updatedAt',
+                'receivedAt'
+              ])
+            && request.resource.data.status == 'received'
+            && request.resource.data.clientUid == request.auth.uid
+          );
+        allow delete: if isSelf(userId);
+      }
+
+      match /deliverables/{deliverableId} {
+        allow read: if isSelf(userId)
+          || (
+            signedIn()
+            && resource.data.projectId is string
+            && isAllowedClientProject(userId, resource.data.projectId)
+          );
+        allow create: if isSelf(userId)
+          && request.resource.data.professionalUid == request.auth.uid;
+        allow update: if (
+            isSelf(userId)
+            && request.resource.data.professionalUid == request.auth.uid
+          ) || (
+            signedIn()
+            && resource.data.projectId is string
+            && resource.data.professionalUid == userId
+            && request.resource.data.professionalUid == resource.data.professionalUid
+            && request.resource.data.projectId == resource.data.projectId
+            && request.resource.data.clientId == resource.data.clientId
+            && resource.data.clientId == signedInClientId()
+            && isAllowedClientProject(userId, resource.data.projectId)
+            && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['status', 'updatedAt'])
+            && request.resource.data.status in ['approved', 'changesRequested']
+          );
+        allow delete: if isSelf(userId);
+      }
+
+      match /deliverable_versions/{versionId} {
+        allow read: if isSelf(userId)
+          || (
+            signedIn()
+            && resource.data.projectId is string
+            && isAllowedClientProject(userId, resource.data.projectId)
+          );
+        allow create: if isSelf(userId)
+          && request.resource.data.professionalUid == request.auth.uid;
+        allow update: if (
+            isSelf(userId)
+            && request.resource.data.professionalUid == request.auth.uid
+          ) || (
+            signedIn()
+            && resource.data.projectId is string
+            && resource.data.professionalUid == userId
+            && request.resource.data.professionalUid == resource.data.professionalUid
+            && request.resource.data.projectId == resource.data.projectId
+            && request.resource.data.clientId == resource.data.clientId
+            && resource.data.clientId == signedInClientId()
+            && isAllowedClientProject(userId, resource.data.projectId)
+            && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['status', 'clientComment', 'reviewedAt', 'reviewedBy'])
+            && request.resource.data.status in ['approved', 'changesRequested']
+            && request.resource.data.reviewedBy == request.auth.uid
+            && (
+              request.resource.data.status == 'approved'
+              || (
+                request.resource.data.clientComment is string
+                && request.resource.data.clientComment.size() > 0
+              )
+            )
+          );
+        allow delete: if isSelf(userId);
+      }
+
+      match /deliverable_annotations/{annotationId} {
+        allow read: if isSelf(userId)
+          || (
+            signedIn()
+            && resource.data.projectId is string
+            && isAllowedClientProject(userId, resource.data.projectId)
+          );
+        allow create: if (
+            isSelf(userId)
+            && request.resource.data.professionalUid == request.auth.uid
+          ) || (
+            signedIn()
+            && request.resource.data.projectId is string
+            && request.resource.data.authorUid == request.auth.uid
+            && request.resource.data.professionalUid == userId
+            && isAllowedClientProject(userId, request.resource.data.projectId)
+          );
+        allow update: if isSelf(userId)
+          || (
+            signedIn()
+            && resource.data.projectId is string
+            && resource.data.authorUid == request.auth.uid
+            && isAllowedClientProject(userId, resource.data.projectId)
+          );
+        allow delete: if isSelf(userId);
+      }
+    }
+
+    match /client_invitations/{token} {
+      allow read: if true;
+      allow create: if signedIn()
+        && request.resource.data.professionalId == request.auth.uid
+        && request.resource.data.status == 'active';
+      allow update: if signedIn()
+        && (
+          resource.data.professionalId == request.auth.uid
+          || (
+            resource.data.status == 'active'
+            && request.resource.data.status == 'claimed'
+            && request.resource.data.clientUid == request.auth.uid
+          )
+        );
+      allow delete: if signedIn() && resource.data.professionalId == request.auth.uid;
+    }
+
+    match /client_accounts/{clientUid} {
+      allow create: if isSelf(clientUid)
+        && request.resource.data.role == 'client'
+        && request.resource.data.uid == request.auth.uid;
+      allow read, update, delete: if isSelf(clientUid)
+        || (signedIn() && resource.data.professionalId == request.auth.uid);
+
+      match /projects/{projectId} {
+        allow read, write: if isSelf(clientUid)
+          || (signedIn() && get(/databases/$(database)/documents/client_accounts/$(clientUid)).data.professionalId == request.auth.uid);
+      }
+
+      match /messages/{messageId} {
+        allow read: if isSelf(clientUid)
+          || (signedIn() && get(/databases/$(database)/documents/client_accounts/$(clientUid)).data.professionalId == request.auth.uid);
+        allow create: if (isSelf(clientUid)
+          || (signedIn() && get(/databases/$(database)/documents/client_accounts/$(clientUid)).data.professionalId == request.auth.uid))
+          && request.resource.data.text is string
+          && request.resource.data.text.size() > 0
+          && request.resource.data.text.size() < 2000;
+        allow update, delete: if false;
+      }
+
+      match /documents/{documentId} {
+        allow read: if isSelf(clientUid)
+          || (signedIn() && get(/databases/$(database)/documents/client_accounts/$(clientUid)).data.professionalId == request.auth.uid);
+        allow create, update: if isSelf(clientUid)
+          || (signedIn() && get(/databases/$(database)/documents/client_accounts/$(clientUid)).data.professionalId == request.auth.uid);
+        allow delete: if isSelf(clientUid)
+          || (signedIn() && get(/databases/$(database)/documents/client_accounts/$(clientUid)).data.professionalId == request.auth.uid);
+      }
+
+      match /document_requests/{requestId} {
+        allow read: if isSelf(clientUid)
+          || (signedIn() && get(/databases/$(database)/documents/client_accounts/$(clientUid)).data.professionalId == request.auth.uid);
+        allow create, update: if signedIn()
+          && (
+            get(/databases/$(database)/documents/client_accounts/$(clientUid)).data.professionalId == request.auth.uid
+            || (
+              isSelf(clientUid)
+              && request.resource.data.status == 'received'
+            )
+          );
+        allow delete: if signedIn()
+          && get(/databases/$(database)/documents/client_accounts/$(clientUid)).data.professionalId == request.auth.uid;
+      }
+
+      match /actions/{actionId} {
+        allow read: if isSelf(clientUid)
+          || (signedIn() && get(/databases/$(database)/documents/client_accounts/$(clientUid)).data.professionalId == request.auth.uid);
+        allow create, delete: if signedIn()
+          && get(/databases/$(database)/documents/client_accounts/$(clientUid)).data.professionalId == request.auth.uid;
+        allow update: if signedIn()
+          && (
+            get(/databases/$(database)/documents/client_accounts/$(clientUid)).data.professionalId == request.auth.uid
+            || (
+              isSelf(clientUid)
+              && resource.data.assignedTo == 'client'
+              && resource.data.visibleToClient == true
+              && resource.data.status == 'pending'
+              && request.resource.data.diff(resource.data).changedKeys()
+                .hasOnly(['status', 'completedAt', 'updatedAt'])
+              && request.resource.data.status == 'completed'
+            )
+          );
+      }
+
+      match /tasks/{taskId} {
+        allow read: if isSelf(clientUid)
+          || (signedIn() && get(/databases/$(database)/documents/client_accounts/$(clientUid)).data.professionalId == request.auth.uid);
+        allow write: if signedIn()
+          && get(/databases/$(database)/documents/client_accounts/$(clientUid)).data.professionalId == request.auth.uid
+          && request.resource.data.visibleToClient == true;
+        allow delete: if signedIn()
+          && get(/databases/$(database)/documents/client_accounts/$(clientUid)).data.professionalId == request.auth.uid;
+      }
+
+      match /timeline/{eventId} {
+        allow read: if isSelf(clientUid)
+          || (signedIn() && get(/databases/$(database)/documents/client_accounts/$(clientUid)).data.professionalId == request.auth.uid);
+        allow write: if signedIn()
+          && get(/databases/$(database)/documents/client_accounts/$(clientUid)).data.professionalId == request.auth.uid;
+      }
+
+      match /deliverables/{deliverableId} {
+        allow read: if isSelf(clientUid)
+          || (signedIn() && get(/databases/$(database)/documents/client_accounts/$(clientUid)).data.professionalId == request.auth.uid);
+        allow create, update: if signedIn()
+          && (
+            get(/databases/$(database)/documents/client_accounts/$(clientUid)).data.professionalId == request.auth.uid
+            || (
+              isSelf(clientUid)
+              && request.resource.data.status in ['approved', 'changesRequested']
+            )
+          );
+        allow delete: if signedIn()
+          && get(/databases/$(database)/documents/client_accounts/$(clientUid)).data.professionalId == request.auth.uid;
+      }
+
+      match /deliverable_versions/{versionId} {
+        allow read: if isSelf(clientUid)
+          || (signedIn() && get(/databases/$(database)/documents/client_accounts/$(clientUid)).data.professionalId == request.auth.uid);
+        allow create, update: if signedIn()
+          && (
+            get(/databases/$(database)/documents/client_accounts/$(clientUid)).data.professionalId == request.auth.uid
+            || (
+              isSelf(clientUid)
+              && request.resource.data.status in ['approved', 'changesRequested']
+            )
+          );
+        allow delete: if signedIn()
+          && get(/databases/$(database)/documents/client_accounts/$(clientUid)).data.professionalId == request.auth.uid;
+      }
+
+      match /deliverable_annotations/{annotationId} {
+        allow read: if isSelf(clientUid)
+          || (signedIn() && get(/databases/$(database)/documents/client_accounts/$(clientUid)).data.professionalId == request.auth.uid);
+        allow create: if signedIn()
+          && (
+            get(/databases/$(database)/documents/client_accounts/$(clientUid)).data.professionalId == request.auth.uid
+            || (
+              isSelf(clientUid)
+              && request.resource.data.authorUid == request.auth.uid
+              && request.resource.data.projectId in get(/databases/$(database)/documents/client_accounts/$(clientUid)).data.projectIds
+            )
+          );
+        allow update: if signedIn()
+          && (
+            get(/databases/$(database)/documents/client_accounts/$(clientUid)).data.professionalId == request.auth.uid
+            || (
+              isSelf(clientUid)
+              && resource.data.authorUid == request.auth.uid
+            )
+          );
+        allow delete: if signedIn()
+          && get(/databases/$(database)/documents/client_accounts/$(clientUid)).data.professionalId == request.auth.uid;
+      }
+    }
+
+    match /notifications/{notificationId} {
+      allow read, update: if signedIn()
+        && resource.data.recipientUid == request.auth.uid;
+      allow create: if signedIn()
+        && request.resource.data.recipientUid is string;
+      allow delete: if false;
+    }
+
+    // Read-only client portal snapshots. Anyone holding the exact share code
+    // can read a project's public status (title, progress, budget, deadline,
+    // task summary) — nothing else in the database is reachable this way.
+    // Only the freelancer who owns the underlying project may publish or
+    // revoke a snapshot.
+    match /shared_projects/{shareId} {
+      allow read: if true;
+      allow create: if request.auth != null
+        && request.resource.data.ownerUid == request.auth.uid;
+      allow update, delete: if request.auth != null
+        && resource.data.ownerUid == request.auth.uid;
+    }
+
+    // Read/write client space: same share-code capability model as
+    // shared_projects above, plus a message thread anyone holding the code
+    // (freelancer or client) can read and post into.
+    match /shared_clients/{shareId} {
+      allow read: if true;
+      // The owning professional may always create their client's space.
+      // A client already linked to that professional (client_accounts)
+      // may also create it lazily — e.g. the first time they send a
+      // message before the professional has opened the chat — but only
+      // for themselves (clientUid must be their own uid), never for
+      // another client.
+      allow create: if request.auth != null
+        && (
+          request.resource.data.ownerUid == request.auth.uid
+          || isOwnSharedClientSpace(
+            request.resource.data.ownerUid,
+            request.resource.data.clientUid,
+          )
+        );
+      allow update: if request.auth != null
+        && (
+          resource.data.ownerUid == request.auth.uid
+          || (
+            resource.data.status == 'active'
+            && request.resource.data.status == 'claimed'
+            && request.resource.data.clientUid == request.auth.uid
+          )
+        );
+      allow delete: if request.auth != null
+        && resource.data.ownerUid == request.auth.uid;
+
+      match /messages/{messageId} {
+        allow read: if true;
+        allow create: if request.resource.data.senderType in ['freelancer', 'client']
+          && request.resource.data.text is string
+          && request.resource.data.text.size() > 0
+          && request.resource.data.text.size() < 2000;
+        allow update, delete: if false;
+      }
+    }
+  }
+}

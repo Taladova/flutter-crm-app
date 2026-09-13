@@ -1,5 +1,5 @@
 name: clientflow_pro
-description: "A new Flutter project."
+description: "Deskly — gestion de clients, projets et tâches pour freelances et agences."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -40,6 +40,12 @@ dependencies:
   firebase_core: ^3.15.2
   firebase_auth: ^5.7.0
   cloud_firestore: ^5.6.12
+  pdf: ^3.11.3
+  printing: ^5.14.2
+  flutter_secure_storage: ^9.2.4
+  firebase_storage: ^12.4.10
+  file_picker: ^10.3.7
+  url_launcher: ^6.3.2
 
 dev_dependencies:
   flutter_test:
@@ -51,6 +57,20 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icon/icon_master.png"
+  adaptive_icon_background: "#000B27"
+  adaptive_icon_foreground: "assets/icon/adaptive_foreground.png"
+  remove_alpha_ios: true
+  web:
+    generate: true
+    image_path: "assets/icon/icon_master.png"
+    background_color: "#000B27"
+    theme_color: "#000B27"
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -62,6 +82,10 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  assets:
+    - assets/icon/
+    - assets/images/
 
   # To add assets to your application, add an assets section, like this:
   # assets:

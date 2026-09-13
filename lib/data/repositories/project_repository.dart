@@ -2,9 +2,7 @@ import '../models/project_model.dart';
 import '../services/firestore_service.dart';
 
 class ProjectRepository {
-  const ProjectRepository({
-    required this.firestoreService,
-  });
+  const ProjectRepository({required this.firestoreService});
 
   final FirestoreService firestoreService;
 
@@ -33,7 +31,18 @@ class ProjectRepository {
     return ProjectModel.fromJson(doc.data()!);
   }
 
-  Future<void> resetProjects() async {
+  Future<void> updateProject(ProjectModel project) async {
+    await firestoreService
+        .userCollection('projects')
+        .doc(project.id)
+        .set(project.toJson());
+  }
+
+  Future<void> deleteProject(String id) async {
+    await firestoreService.userCollection('projects').doc(id).delete();
+  }
+
+  Future<void> clearProjects() async {
     final collection = firestoreService.userCollection('projects');
     final snapshot = await collection.get();
 

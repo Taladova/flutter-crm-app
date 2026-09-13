@@ -4,12 +4,15 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/app_theme.dart';
 import '../../../core/widgets/app_card.dart';
-import '../../../core/widgets/section_title.dart';
 import '../../../data/models/client_model.dart';
 import '../providers/client_providers.dart';
 
 class AddClientPage extends ConsumerStatefulWidget {
-  const AddClientPage({super.key});
+  const AddClientPage({super.key, this.clientId});
+
+  final String? clientId;
+
+  bool get isEditing => clientId != null;
 
   @override
   ConsumerState<AddClientPage> createState() => _AddClientPageState();
@@ -24,12 +27,27 @@ class _AddClientPageState extends ConsumerState<AddClientPage> {
   final phoneController = TextEditingController();
 
   String selectedStatus = 'Prospect';
+  int existingProjectsCount = 0;
 
-  final List<String> statuses = const [
-    'Prospect',
-    'Actif',
-    'En attente',
-  ];
+  final List<String> statuses = const ['Prospect', 'Actif', 'En attente'];
+
+  @override
+  void initState() {
+    super.initState();
+
+    if (widget.clientId != null) {
+      final client = ref.read(clientByIdProvider(widget.clientId!));
+
+      if (client != null) {
+        nameController.text = client.name;
+        companyController.text = client.company;
+        emailController.text = client.email;
+        phoneController.text = client.phone;
+        selectedStatus = client.status;
+        existingProjectsCount = client.projectsCount;
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -45,27 +63,39 @@ class _AddClientPageState extends ConsumerState<AddClientPage> {
 
     if (!isValid) return;
 
-    final newClient = ClientModel(
-      id: 'client_${DateTime.now().millisecondsSinceEpoch}',
+    final client = ClientModel(
+      id: widget.clientId ?? 'client_${DateTime.now().millisecondsSinceEpoch}',
       name: nameController.text.trim(),
       company: companyController.text.trim(),
       email: emailController.text.trim(),
       phone: phoneController.text.trim(),
-      projectsCount: 0,
+      projectsCount: existingProjectsCount,
       status: selectedStatus,
     );
 
-    await ref.read(clientControllerProvider.notifier).addClient(newClient);
+    if (widget.isEditing) {
+      await ref.read(clientControllerProvider.notifier).updateClient(client);
+    } else {
+      await ref.read(clientControllerProvider.notifier).addClient(client);
+    }
 
     if (!mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Client ajouté avec succès.'),
+      SnackBar(
+        content: Text(
+          widget.isEditing
+              ? 'Client mis à jour avec succès.'
+              : 'Client ajouté avec succès.',
+        ),
       ),
     );
 
-    context.go('/clients');
+    if (widget.isEditing) {
+      context.pop();
+    } else {
+      context.go('/main?tab=1');
+    }
   }
 
   @override
@@ -74,7 +104,7 @@ class _AddClientPageState extends ConsumerState<AddClientPage> {
       backgroundColor: AppTheme.pageBackground(context),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 18, 20, 32),
+          padding: const EdgeInsets.fromLTRB(18, 14, 18, 24),
           child: Form(
             key: formKey,
             child: Column(
@@ -82,13 +112,22 @@ class _AddClientPageState extends ConsumerState<AddClientPage> {
               children: [
                 _AddClientHeader(
                   onBack: () => context.pop(),
+                  title: widget.isEditing
+                      ? 'Modifier le client'
+                      : 'Nouveau client',
                 ),
-                const SizedBox(height: 24),
-                const SectionTitle(title: 'Informations client'),
-                const SizedBox(height: 14),
+                const SizedBox(height: 18),
                 AppCard(
+                  padding: const EdgeInsets.all(16),
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      const _FormCardHeader(
+                        icon: Icons.badge_rounded,
+                        title: 'Informations client',
+                        subtitle: 'Coordonnées et identité du client',
+                      ),
+                      const SizedBox(height: 16),
                       _AppTextField(
                         controller: nameController,
                         label: 'Nom du client',
@@ -101,7 +140,7 @@ class _AddClientPageState extends ConsumerState<AddClientPage> {
                           return null;
                         },
                       ),
-                      const SizedBox(height: 18),
+                      const SizedBox(height: 14),
                       _AppTextField(
                         controller: companyController,
                         label: 'Entreprise',
@@ -114,26 +153,26 @@ class _AddClientPageState extends ConsumerState<AddClientPage> {
                           return null;
                         },
                       ),
-                      const SizedBox(height: 18),
+                      const SizedBox(height: 14),
                       _AppTextField(
                         controller: emailController,
-                        label: 'Email',
+                        label: 'Adresse e-mail',
                         hint: 'contact@email.fr',
                         icon: Icons.email_rounded,
                         keyboardType: TextInputType.emailAddress,
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {
-                            return 'L’email est obligatoire';
+                            return 'L’adresse e-mail est obligatoire';
                           }
 
                           if (!value.contains('@')) {
-                            return 'Email invalide';
+                            return 'Adresse e-mail invalide';
                           }
 
                           return null;
                         },
                       ),
-                      const SizedBox(height: 18),
+                      const SizedBox(height: 14),
                       _AppTextField(
                         controller: phoneController,
                         label: 'Téléphone',
@@ -150,9 +189,7 @@ class _AddClientPageState extends ConsumerState<AddClientPage> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 24),
-                const SectionTitle(title: 'Statut'),
-                const SizedBox(height: 14),
+                const SizedBox(height: 16),
                 _StatusSelector(
                   statuses: statuses,
                   selectedStatus: selectedStatus,
@@ -162,10 +199,10 @@ class _AddClientPageState extends ConsumerState<AddClientPage> {
                     });
                   },
                 ),
-                const SizedBox(height: 32),
+                const SizedBox(height: 22),
                 SizedBox(
                   width: double.infinity,
-                  height: 58,
+                  height: 56,
                   child: ElevatedButton(
                     onPressed: submitForm,
                     style: ElevatedButton.styleFrom(
@@ -176,9 +213,9 @@ class _AddClientPageState extends ConsumerState<AddClientPage> {
                         borderRadius: BorderRadius.circular(18),
                       ),
                     ),
-                    child: const Text(
-                      'Ajouter le client',
-                      style: TextStyle(
+                    child: Text(
+                      widget.isEditing ? 'Enregistrer' : 'Ajouter le client',
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 16,
                         fontWeight: FontWeight.w900,
@@ -196,11 +233,10 @@ class _AddClientPageState extends ConsumerState<AddClientPage> {
 }
 
 class _AddClientHeader extends StatelessWidget {
-  const _AddClientHeader({
-    required this.onBack,
-  });
+  const _AddClientHeader({required this.onBack, required this.title});
 
   final VoidCallback onBack;
+  final String title;
 
   @override
   Widget build(BuildContext context) {
@@ -214,9 +250,7 @@ class _AddClientHeader extends StatelessWidget {
             decoration: BoxDecoration(
               color: AppTheme.cardColor(context),
               borderRadius: BorderRadius.circular(15),
-              border: Border.all(
-                color: AppTheme.borderColor(context),
-              ),
+              border: Border.all(color: AppTheme.borderColor(context)),
             ),
             child: Icon(
               Icons.arrow_back_rounded,
@@ -226,10 +260,7 @@ class _AddClientHeader extends StatelessWidget {
         ),
         const SizedBox(width: 14),
         Expanded(
-          child: Text(
-            'Nouveau client',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
+          child: Text(title, style: Theme.of(context).textTheme.titleLarge),
         ),
       ],
     );
@@ -255,9 +286,7 @@ class _AppTextField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fieldColor = AppTheme.isDark(context)
-        ? const Color(0xFF000B27)
-        : const Color(0xFFF8FAFC);
+    final fieldColor = AppTheme.secondarySurface(context);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -266,11 +295,11 @@ class _AppTextField extends StatelessWidget {
           label,
           style: TextStyle(
             color: AppTheme.mainTextColor(context),
-            fontSize: 14,
+            fontSize: 13,
             fontWeight: FontWeight.w900,
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 8),
         TextFormField(
           validator: validator,
           controller: controller,
@@ -280,35 +309,29 @@ class _AppTextField extends StatelessWidget {
             fontWeight: FontWeight.w700,
           ),
           decoration: InputDecoration(
+            isDense: true,
             hintText: hint,
-            prefixIcon: Icon(
-              icon,
-              color: AppTheme.secondaryTextColor(context),
-            ),
+            prefixIcon: Icon(icon, color: AppTheme.secondaryTextColor(context)),
             filled: true,
             fillColor: fieldColor,
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 18,
-              vertical: 18,
+              vertical: 14,
             ),
             hintStyle: TextStyle(
-              color: AppTheme.secondaryTextColor(context).withOpacity(0.7),
+              color: AppTheme.secondaryTextColor(
+                context,
+              ).withValues(alpha: 0.7),
               fontWeight: FontWeight.w500,
             ),
-            errorStyle: const TextStyle(
-              fontWeight: FontWeight.w700,
-            ),
+            errorStyle: const TextStyle(fontWeight: FontWeight.w700),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(18),
-              borderSide: BorderSide(
-                color: AppTheme.borderColor(context),
-              ),
+              borderSide: BorderSide(color: AppTheme.borderColor(context)),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(18),
-              borderSide: BorderSide(
-                color: AppTheme.borderColor(context),
-              ),
+              borderSide: BorderSide(color: AppTheme.borderColor(context)),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(18),
@@ -352,47 +375,112 @@ class _StatusSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppCard(
-      child: Row(
-        children: statuses.map((status) {
-          final isSelected = selectedStatus == status;
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _FormCardHeader(
+            icon: Icons.verified_user_rounded,
+            title: 'Statut client',
+            subtitle: 'Classez rapidement votre relation',
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: statuses.map((status) {
+              final isSelected = selectedStatus == status;
 
-          return Expanded(
-            child: GestureDetector(
-              onTap: () => onChanged(status),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 220),
-                margin: const EdgeInsets.symmetric(horizontal: 4),
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? AppTheme.primaryColor
-                      : AppTheme.isDark(context)
-                          ? const Color(0xFF000B27)
-                          : const Color(0xFFF8FAFC),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: isSelected
-                        ? AppTheme.primaryColor
-                        : AppTheme.borderColor(context),
-                  ),
-                ),
-                child: Center(
-                  child: Text(
-                    status,
-                    style: TextStyle(
+              return Expanded(
+                child: GestureDetector(
+                  onTap: () => onChanged(status),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 220),
+                    margin: const EdgeInsets.symmetric(horizontal: 3),
+                    padding: const EdgeInsets.symmetric(vertical: 11),
+                    decoration: BoxDecoration(
                       color: isSelected
-                          ? Colors.white
-                          : AppTheme.secondaryTextColor(context),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w900,
+                          ? AppTheme.primaryColor
+                          : AppTheme.secondarySurface(context),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: isSelected
+                            ? AppTheme.primaryColor
+                            : AppTheme.borderColor(context),
+                      ),
+                    ),
+                    child: Center(
+                      child: Text(
+                        status,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: isSelected
+                              ? Colors.white
+                              : AppTheme.secondaryTextColor(context),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ),
-          );
-        }).toList(),
+              );
+            }).toList(),
+          ),
+        ],
       ),
+    );
+  }
+}
+
+class _FormCardHeader extends StatelessWidget {
+  const _FormCardHeader({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(
+            color: AppTheme.primaryColor.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Icon(icon, color: AppTheme.primaryColor, size: 22),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: TextStyle(
+                  color: AppTheme.mainTextColor(context),
+                  fontSize: 15,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                subtitle,
+                style: TextStyle(
+                  color: AppTheme.secondaryTextColor(context),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

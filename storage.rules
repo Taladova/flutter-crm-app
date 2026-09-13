@@ -1,0 +1,14 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    match /shared_clients/9AVELB/{allPaths=**} {
+      allow read, write: if request.auth != null
+        && (
+          request.auth.uid == '916uzBgXPARiVJgWAQCuWlnNqlo2'
+          || request.auth.uid == 'KO3BbKerw7hjdU7WNUafGMnXEwD3'
+        );
+    }
+  }
+}
