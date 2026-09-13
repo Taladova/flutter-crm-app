@@ -26,7 +26,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
       icon: Icons.timeline_rounded,
       title: 'Suivez vos projets',
       description:
-          'Visualisez l’avancement de chaque site web, chaque tâche et chaque deadline depuis un seul espace.',
+          'Visualisez l’avancement de chaque site web, chaque tâche et chaque échéance depuis un seul espace.',
     ),
     _OnboardingItem(
       icon: Icons.rocket_launch_rounded,
@@ -50,7 +50,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
   Future<void> _finishOnboarding() async {
     await markOnboardingSeen();
     if (!mounted) return;
-    context.go('/login');
+    context.go('/role-choice');
   }
 
   @override
@@ -169,7 +169,11 @@ class _OnboardingSlide extends StatelessWidget {
                   ),
                 ],
               ),
-              child: Icon(item.icon, color: AppTheme.cardColor(context), size: 52),
+              child: Icon(
+                item.icon,
+                color: AppTheme.cardColor(context),
+                size: 52,
+              ),
             ),
           ),
         ),

@@ -17,7 +17,7 @@ class AppSearchField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fieldColor = AppTheme.isDark(context)
-        ? const Color(0xFF000B27)
+        ? AppTheme.secondarySurface(context)
         : AppTheme.cardColor(context);
 
     return TextField(
@@ -45,22 +45,15 @@ class AppSearchField extends StatelessWidget {
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
-          borderSide: BorderSide(
-            color: AppTheme.borderColor(context),
-          ),
+          borderSide: BorderSide(color: AppTheme.borderColor(context)),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
-          borderSide: BorderSide(
-            color: AppTheme.borderColor(context),
-          ),
+          borderSide: BorderSide(color: AppTheme.borderColor(context)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
-          borderSide: const BorderSide(
-            color: AppTheme.primaryColor,
-            width: 1.5,
-          ),
+          borderSide: BorderSide(color: AppTheme.primary(context), width: 1.5),
         ),
       ),
     );

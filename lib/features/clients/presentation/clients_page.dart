@@ -4,12 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/app_theme.dart';
+import '../../../core/utils/french_text.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/app_empty_state.dart';
-import '../../../core/widgets/app_search_field.dart';
+import '../../../core/widgets/app_filter_tabs.dart';
 import '../../../core/widgets/app_status_badge.dart';
-import '../../../core/widgets/section_title.dart';
 import '../../../data/models/client_model.dart';
+import '../../projects/providers/project_providers.dart';
 import '../providers/client_providers.dart';
 
 class ClientsPage extends ConsumerStatefulWidget {
@@ -25,9 +26,9 @@ class _ClientsPageState extends ConsumerState<ClientsPage> {
 
   final List<String> filters = const [
     'Tous',
-    'Actif',
-    'Prospect',
+    'Actifs',
     'En attente',
+    'Prospects',
   ];
 
   @override
@@ -46,43 +47,95 @@ class _ClientsPageState extends ConsumerState<ClientsPage> {
           client.email.toLowerCase().contains(query);
 
       final matchesFilter =
-          selectedFilter == 'Tous' || client.status == selectedFilter;
+          selectedFilter == 'Tous' ||
+          client.status == _statusValue(selectedFilter);
 
       return matchesSearch && matchesFilter;
     }).toList();
   }
 
+  Map<String, int> _statusCounts(List<ClientModel> clients) {
+    return {
+      'Tous': clients.length,
+      'Actifs': clients.where((client) => client.status == 'Actif').length,
+      'En attente': clients
+          .where((client) => client.status == 'En attente')
+          .length,
+      'Prospects': clients
+          .where((client) => client.status == 'Prospect')
+          .length,
+    };
+  }
+
+  String _statusValue(String filter) {
+    return switch (filter) {
+      'Actifs' => 'Actif',
+      'Prospects' => 'Prospect',
+      _ => filter,
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final clientsAsync = ref.watch(clientControllerProvider);
-
+    final projects = ref.watch(projectControllerProvider).value ?? [];
     return Scaffold(
       backgroundColor: AppTheme.pageBackground(context),
+      floatingActionButton: FloatingActionButton(
+        heroTag: 'add-client-fab',
+        tooltip: 'Ajouter un client',
+        onPressed: () => context.push('/clients/add'),
+        backgroundColor: AppTheme.primary(context),
+        foregroundColor: Colors.white,
+        child: const Icon(Icons.add_rounded),
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
+          padding: const EdgeInsets.fromLTRB(20, 24, 20, 96),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const _ClientsHeader(),
-              const SizedBox(height: 24),
-              AppSearchField(
+              const SizedBox(height: 20),
+              _ClientsSearchField(
                 controller: searchController,
                 onChanged: (_) => setState(() {}),
-                hintText: 'Rechercher un client...',
               ),
-              const SizedBox(height: 18),
-              _FilterChips(
-                filters: filters,
-                selectedFilter: selectedFilter,
-                onFilterSelected: (filter) {
-                  setState(() {
-                    selectedFilter = filter;
-                  });
-                },
+              const SizedBox(height: 14),
+              clientsAsync.when(
+                loading: () => AppFilterTabs(
+                  labels: filters,
+                  selectedLabel: selectedFilter,
+                  onSelected: (filter) {
+                    setState(() {
+                      selectedFilter = filter;
+                    });
+                  },
+                ),
+                error: (_, _) => AppFilterTabs(
+                  labels: filters,
+                  selectedLabel: selectedFilter,
+                  onSelected: (filter) {
+                    setState(() {
+                      selectedFilter = filter;
+                    });
+                  },
+                ),
+                data: (clients) => AppFilterTabs(
+                  labels: filters,
+                  selectedLabel: selectedFilter,
+                  counts: _statusCounts(clients),
+                  onSelected: (filter) {
+                    setState(() {
+                      selectedFilter = filter;
+                    });
+                  },
+                ),
               ),
-              const SizedBox(height: 24),
-              const SectionTitle(title: 'Clients récents'),
+              const SizedBox(height: 22),
+              _ClientsListSummary(
+                clients: clientsAsync.value ?? const <ClientModel>[],
+              ),
               const SizedBox(height: 14),
               clientsAsync.when(
                 loading: () => const Center(
@@ -117,7 +170,18 @@ class _ClientsPageState extends ConsumerState<ClientsPage> {
                             padding: const EdgeInsets.only(bottom: 12),
                             child: AppFadeIn(
                               delay: 100 * filteredClients.indexOf(client),
-                              child: _ClientCard(client: client),
+                              child: _ClientCard(
+                                client: client,
+                                projectsCount: projects
+                                    .where(
+                                      (project) =>
+                                          project.clientName
+                                              .trim()
+                                              .toLowerCase() ==
+                                          client.name.trim().toLowerCase(),
+                                    )
+                                    .length,
+                              ),
                             ),
                           ),
                         )
@@ -160,98 +224,119 @@ class _ClientsHeader extends StatelessWidget {
             ],
           ),
         ),
-        GestureDetector(
-          onTap: () {
-            context.push('/clients/add');
-          },
-          child: Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: AppTheme.primaryColor,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: AppTheme.primaryColor.withValues(alpha: 0.22),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
-                ),
-              ],
-            ),
-            child: const Icon(
-              Icons.add_rounded,
-              color: Colors.white,
-            ),
-          ),
-        ),
       ],
     );
   }
 }
 
-class _FilterChips extends StatelessWidget {
-  const _FilterChips({
-    required this.filters,
-    required this.selectedFilter,
-    required this.onFilterSelected,
+class _ClientsSearchField extends StatelessWidget {
+  const _ClientsSearchField({
+    required this.controller,
+    required this.onChanged,
   });
 
-  final List<String> filters;
-  final String selectedFilter;
-  final ValueChanged<String> onFilterSelected;
+  final TextEditingController controller;
+  final ValueChanged<String> onChanged;
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 42,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: filters.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 10),
-        itemBuilder: (context, index) {
-          final filter = filters[index];
-          final isSelected = filter == selectedFilter;
+    final hasText = controller.text.trim().isNotEmpty;
 
-          return GestureDetector(
-            onTap: () => onFilterSelected(filter),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 220),
-              padding: const EdgeInsets.symmetric(horizontal: 18),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? AppTheme.primaryColor
-                    : AppTheme.cardColor(context),
-                borderRadius: BorderRadius.circular(100),
-                border: Border.all(
-                  color: isSelected
-                      ? AppTheme.primaryColor
-                      : AppTheme.borderColor(context),
+    return TextField(
+      controller: controller,
+      onChanged: onChanged,
+      textInputAction: TextInputAction.search,
+      style: TextStyle(
+        color: AppTheme.mainTextColor(context),
+        fontSize: 14,
+        fontWeight: FontWeight.w700,
+      ),
+      decoration: InputDecoration(
+        hintText: 'Rechercher un client ou une entreprise…',
+        prefixIcon: Icon(
+          Icons.search_rounded,
+          size: 20,
+          color: AppTheme.secondaryTextColor(context),
+        ),
+        suffixIcon: hasText
+            ? IconButton(
+                tooltip: 'Effacer la recherche',
+                icon: Icon(
+                  Icons.close_rounded,
+                  size: 18,
+                  color: AppTheme.secondaryTextColor(context),
                 ),
-              ),
-              child: Center(
-                child: Text(
-                  filter,
-                  style: TextStyle(
-                    color: isSelected
-                        ? Colors.white
-                        : AppTheme.secondaryTextColor(context),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
-            ),
-          );
-        },
+                onPressed: () {
+                  controller.clear();
+                  onChanged('');
+                },
+              )
+            : null,
+        filled: true,
+        fillColor: AppTheme.isDark(context)
+            ? AppTheme.secondarySurface(context)
+            : AppTheme.secondarySurface(context).withValues(alpha: 0.72),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: 12,
+        ),
+        hintStyle: TextStyle(
+          color: AppTheme.secondaryTextColor(context).withValues(alpha: 0.82),
+          fontSize: 13.5,
+          fontWeight: FontWeight.w600,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(
+            color: AppTheme.borderColor(context).withValues(alpha: 0.55),
+          ),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(
+            color: AppTheme.borderColor(context).withValues(alpha: 0.55),
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(
+            color: AppTheme.primary(context).withValues(alpha: 0.55),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ClientsListSummary extends StatelessWidget {
+  const _ClientsListSummary({required this.clients});
+
+  final List<ClientModel> clients;
+
+  @override
+  Widget build(BuildContext context) {
+    final activeCount = clients
+        .where((client) => client.status.trim().toLowerCase() == 'actif')
+        .length;
+    final clientsLabel = frPlural(clients.length, 'client', 'clients');
+    final activeLabel = frPlural(activeCount, 'actif', 'actifs');
+
+    return Text(
+      '$clientsLabel • $activeLabel',
+      style: TextStyle(
+        color: AppTheme.secondaryTextColor(context),
+        fontSize: 14,
+        fontWeight: FontWeight.w800,
       ),
     );
   }
 }
 
 class _ClientCard extends StatelessWidget {
-  const _ClientCard({required this.client});
+  const _ClientCard({required this.client, required this.projectsCount});
 
   final ClientModel client;
+  final int projectsCount;
 
   @override
   Widget build(BuildContext context) {
@@ -264,19 +349,28 @@ class _ClientCard extends StatelessWidget {
           context.push('/clients/${client.id}');
         },
         child: AppCard(
+          padding: const EdgeInsets.all(16),
           child: Column(
             children: [
               Row(
                 children: [
-                  CircleAvatar(
-                    radius: 25,
-                    backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.14),
-                    child: Text(
-                      client.name.substring(0, 1),
-                      style: const TextStyle(
-                        color: AppTheme.primaryColor,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w900,
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryColor.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Center(
+                      child: Text(
+                        client.name.trim().isEmpty
+                            ? '?'
+                            : client.name.trim().substring(0, 1),
+                        style: const TextStyle(
+                          color: AppTheme.primaryColor,
+                          fontSize: 19,
+                          fontWeight: FontWeight.w900,
+                        ),
                       ),
                     ),
                   ),
@@ -308,24 +402,16 @@ class _ClientCard extends StatelessWidget {
                   AppStatusBadge(status: client.status),
                 ],
               ),
-              const SizedBox(height: 18),
-              _InfoRow(icon: Icons.email_rounded, text: client.email),
-              const SizedBox(height: 10),
-              _InfoRow(icon: Icons.phone_rounded, text: client.phone),
-              const SizedBox(height: 16),
+              const SizedBox(height: 14),
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 14,
                   vertical: 12,
                 ),
                 decoration: BoxDecoration(
-                  color: AppTheme.isDark(context)
-                      ? const Color(0xFF000B27)
-                      : const Color(0xFFF8FAFC),
+                  color: AppTheme.secondarySurface(context),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: AppTheme.borderColor(context),
-                  ),
+                  border: Border.all(color: AppTheme.borderColor(context)),
                 ),
                 child: Row(
                   children: [
@@ -336,7 +422,11 @@ class _ClientCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 10),
                     Text(
-                      '${client.projectsCount} projet(s) associé(s)',
+                      frPlural(
+                        projectsCount,
+                        'projet associé',
+                        'projets associés',
+                      ),
                       style: TextStyle(
                         color: AppTheme.mainTextColor(context),
                         fontSize: 13,
@@ -356,40 +446,6 @@ class _ClientCard extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _InfoRow extends StatelessWidget {
-  const _InfoRow({
-    required this.icon,
-    required this.text,
-  });
-
-  final IconData icon;
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(
-          icon,
-          size: 18,
-          color: AppTheme.secondaryTextColor(context),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Text(
-            text,
-            style: TextStyle(
-              color: AppTheme.secondaryTextColor(context),
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-      ],
     );
   }
 }

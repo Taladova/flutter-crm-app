@@ -2,13 +2,16 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 
+import '../../core/utils/currency_text.dart';
 import '../models/project_model.dart';
 import '../models/task_model.dart';
 
-const _violet = PdfColor.fromInt(0xFF7C5CFF);
-const _midnight = PdfColor.fromInt(0xFF0A0E27);
-const _grey = PdfColor.fromInt(0xFF6B7280);
-const _border = PdfColor.fromInt(0xFFE2E8F0);
+const _green = PdfColor.fromInt(0xFF1C9E85);
+const _blue = PdfColor.fromInt(0xFF4F6B8A);
+const _text = PdfColor.fromInt(0xFF172033);
+const _grey = PdfColor.fromInt(0xFF667085);
+const _border = PdfColor.fromInt(0xFFE1E7EF);
+const _secondarySurface = PdfColor.fromInt(0xFFEEF3F7);
 
 class ProjectPdfService {
   static Future<void> shareProjectReport({
@@ -34,7 +37,7 @@ class ProjectPdfService {
                     style: pw.TextStyle(
                       fontSize: 20,
                       fontWeight: pw.FontWeight.bold,
-                      color: _violet,
+                      color: _green,
                     ),
                   ),
                   pw.Text(
@@ -49,7 +52,7 @@ class ProjectPdfService {
                 style: pw.TextStyle(
                   fontSize: 22,
                   fontWeight: pw.FontWeight.bold,
-                  color: _midnight,
+                  color: _text,
                 ),
               ),
               pw.SizedBox(height: 4),
@@ -61,15 +64,15 @@ class ProjectPdfService {
               pw.Container(
                 padding: const pw.EdgeInsets.all(16),
                 decoration: pw.BoxDecoration(
-                  color: _violet,
+                  gradient: pw.LinearGradient(colors: [_green, _blue]),
                   borderRadius: pw.BorderRadius.circular(10),
                 ),
                 child: pw.Row(
                   mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                   children: [
                     _pdfStat('Statut', project.status),
-                    _pdfStat('Budget', project.budget),
-                    _pdfStat('Deadline', project.deadline),
+                    _pdfStat('Budget', formatCurrencyText(project.budget)),
+                    _pdfStat('Échéance', project.deadline),
                     _pdfStat('Avancement', '$percent%'),
                   ],
                 ),
@@ -80,7 +83,7 @@ class ProjectPdfService {
                 style: pw.TextStyle(
                   fontSize: 14,
                   fontWeight: pw.FontWeight.bold,
-                  color: _midnight,
+                  color: _text,
                 ),
               ),
               pw.SizedBox(height: 10),
@@ -100,12 +103,14 @@ class ProjectPdfService {
                   },
                   children: [
                     pw.TableRow(
-                      decoration: const pw.BoxDecoration(color: PdfColor.fromInt(0xFFF8FAFC)),
+                      decoration: const pw.BoxDecoration(
+                        color: _secondarySurface,
+                      ),
                       children: [
                         _pdfHeaderCell('Tâche'),
                         _pdfHeaderCell('Statut'),
                         _pdfHeaderCell('Priorité'),
-                        _pdfHeaderCell('Deadline'),
+                        _pdfHeaderCell('Échéance'),
                       ],
                     ),
                     ...tasks.map(
@@ -142,11 +147,18 @@ class ProjectPdfService {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
-        pw.Text(label, style: const pw.TextStyle(fontSize: 9, color: PdfColors.white)),
+        pw.Text(
+          label,
+          style: const pw.TextStyle(fontSize: 9, color: PdfColors.white),
+        ),
         pw.SizedBox(height: 3),
         pw.Text(
           value,
-          style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold, color: PdfColors.white),
+          style: pw.TextStyle(
+            fontSize: 12,
+            fontWeight: pw.FontWeight.bold,
+            color: PdfColors.white,
+          ),
         ),
       ],
     );
@@ -157,7 +169,11 @@ class ProjectPdfService {
       padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       child: pw.Text(
         text,
-        style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: _midnight),
+        style: pw.TextStyle(
+          fontSize: 10,
+          fontWeight: pw.FontWeight.bold,
+          color: _text,
+        ),
       ),
     );
   }
@@ -165,7 +181,10 @@ class ProjectPdfService {
   static pw.Widget _pdfCell(String text) {
     return pw.Padding(
       padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      child: pw.Text(text, style: const pw.TextStyle(fontSize: 10, color: _midnight)),
+      child: pw.Text(
+        text,
+        style: const pw.TextStyle(fontSize: 10, color: _text),
+      ),
     );
   }
 

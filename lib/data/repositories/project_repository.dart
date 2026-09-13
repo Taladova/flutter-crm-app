@@ -2,9 +2,7 @@ import '../models/project_model.dart';
 import '../services/firestore_service.dart';
 
 class ProjectRepository {
-  const ProjectRepository({
-    required this.firestoreService,
-  });
+  const ProjectRepository({required this.firestoreService});
 
   final FirestoreService firestoreService;
 

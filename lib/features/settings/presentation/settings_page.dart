@@ -1,9 +1,11 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/app_theme.dart';
 import '../../../app/theme_provider.dart';
+import '../../../data/providers/firestore_providers.dart';
 import '../../auth/providers/auth_providers.dart';
 import '../../clients/providers/client_providers.dart';
 import '../../projects/providers/project_providers.dart';
@@ -17,6 +19,7 @@ class SettingsPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final currentUser = ref.watch(firebaseAuthProvider).currentUser;
     final userEmail = currentUser?.email ?? 'Compte inconnu';
+    final userName = ref.watch(userDisplayNameProvider).value ?? 'Utilisateur';
 
     return Scaffold(
       backgroundColor: AppTheme.pageBackground(context),
@@ -28,7 +31,11 @@ class SettingsPage extends ConsumerWidget {
             children: [
               const _SettingsHeader(),
               const SizedBox(height: 24),
-              _ProfileCard(email: userEmail),
+              _ProfileCard(
+                name: userName,
+                email: userEmail,
+                onEditName: () => _editDisplayName(context, ref, userName),
+              ),
               const SizedBox(height: 24),
               Text(
                 'Préférences',
@@ -61,15 +68,17 @@ class SettingsPage extends ConsumerWidget {
                   ),
                   Consumer(
                     builder: (context, ref, child) {
-                      final notificationsAsync = ref.watch(notificationsEnabledProvider);
+                      final notificationsAsync = ref.watch(
+                        notificationsEnabledProvider,
+                      );
                       final enabled = notificationsAsync.value ?? true;
 
                       return _SettingsTile(
                         icon: Icons.notifications_rounded,
                         title: 'Notifications',
                         subtitle: enabled
-                            ? 'Rappels de deadlines activés'
-                            : 'Rappels de deadlines désactivés',
+                            ? 'Rappels d’échéances activés'
+                            : 'Rappels d’échéances désactivés',
                         trailing: Switch(
                           value: enabled,
                           activeThumbColor: AppTheme.primaryColor,
@@ -86,10 +95,7 @@ class SettingsPage extends ConsumerWidget {
                     icon: Icons.language_rounded,
                     title: 'Langue',
                     subtitle: 'Français',
-                    trailing: const Icon(
-                      Icons.chevron_right_rounded,
-                      size: 18,
-                    ),
+                    trailing: const Icon(Icons.chevron_right_rounded, size: 18),
                     onTap: () {
                       showDialog(
                         context: context,
@@ -128,29 +134,19 @@ class SettingsPage extends ConsumerWidget {
                   _SettingsTile(
                     icon: Icons.people_alt_rounded,
                     title: 'Espace client',
-                    subtitle: 'Ouvrez un projet pour créer un accès client',
+                    subtitle: 'Accès de suivi et export PDF par projet',
                     trailing: Icon(
                       Icons.arrow_forward_ios_rounded,
                       size: 16,
                       color: AppTheme.secondaryTextColor(context),
                     ),
-                    onTap: () => context.go('/main?tab=2'),
-                  ),
-                  _SettingsTile(
-                    icon: Icons.picture_as_pdf_rounded,
-                    title: 'Export PDF',
-                    subtitle: 'Ouvrez un projet pour exporter son rapport',
-                    trailing: Icon(
-                      Icons.arrow_forward_ios_rounded,
-                      size: 16,
-                      color: AppTheme.secondaryTextColor(context),
-                    ),
-                    onTap: () => context.go('/main?tab=2'),
+                    onTap: () => context.push('/client-space'),
                   ),
                   _SettingsTile(
                     icon: Icons.delete_sweep_rounded,
                     title: 'Supprimer toutes mes données',
-                    subtitle: 'Efface définitivement clients, projets et tâches',
+                    subtitle:
+                        'Efface définitivement clients, projets et tâches',
                     trailing: const Icon(
                       Icons.arrow_forward_ios_rounded,
                       size: 16,
@@ -167,11 +163,13 @@ class SettingsPage extends ConsumerWidget {
                           ),
                           actions: [
                             TextButton(
-                              onPressed: () => Navigator.pop(dialogContext, false),
+                              onPressed: () =>
+                                  Navigator.pop(dialogContext, false),
                               child: const Text('Annuler'),
                             ),
                             TextButton(
-                              onPressed: () => Navigator.pop(dialogContext, true),
+                              onPressed: () =>
+                                  Navigator.pop(dialogContext, true),
                               child: const Text(
                                 'Tout supprimer',
                                 style: TextStyle(color: Color(0xFFDC2626)),
@@ -197,7 +195,9 @@ class SettingsPage extends ConsumerWidget {
 
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text('Toutes vos données ont été supprimées.'),
+                          content: Text(
+                            'Toutes vos données ont été supprimées.',
+                          ),
                         ),
                       );
                     },
@@ -225,18 +225,7 @@ class SettingsPage extends ConsumerWidget {
               const SizedBox(height: 24),
               Text('Compte', style: Theme.of(context).textTheme.titleLarge),
               const SizedBox(height: 14),
-              _LogoutButton(
-                onTap: () async {
-                  await ref.read(authServiceProvider).logout();
-
-                  ref.invalidate(clientControllerProvider);
-                  ref.invalidate(projectControllerProvider);
-                  ref.invalidate(taskControllerProvider);
-
-                  if (!context.mounted) return;
-                  context.go('/login');
-                },
-              ),
+              _LogoutButton(onTap: () => _logout(context, ref)),
               const SizedBox(height: 24),
               Center(
                 child: Text(
@@ -256,6 +245,55 @@ class SettingsPage extends ConsumerWidget {
   }
 }
 
+Future<void> _editDisplayName(
+  BuildContext context,
+  WidgetRef ref,
+  String currentName,
+) async {
+  final controller = TextEditingController(
+    text: currentName == 'Utilisateur' ? '' : currentName,
+  );
+
+  final newName = await showDialog<String>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      title: const Text('Votre nom'),
+      content: TextField(
+        controller: controller,
+        textCapitalization: TextCapitalization.words,
+        decoration: const InputDecoration(
+          labelText: 'Nom',
+          hintText: 'Ex : Marie Dupont',
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(dialogContext),
+          child: const Text('Annuler'),
+        ),
+        ElevatedButton(
+          onPressed: () => Navigator.pop(dialogContext, controller.text.trim()),
+          child: const Text('Enregistrer'),
+        ),
+      ],
+    ),
+  );
+
+  if (newName == null || newName.isEmpty) return;
+
+  final user = ref.read(firebaseAuthProvider).currentUser;
+  if (user == null) return;
+
+  await user.updateDisplayName(newName);
+  await user.reload();
+
+  await ref.read(firestoreProvider).collection('users').doc(user.uid).set({
+    'name': newName,
+  }, SetOptions(merge: true));
+
+  ref.invalidate(userDisplayNameProvider);
+}
+
 class _SettingsHeader extends ConsumerWidget {
   const _SettingsHeader();
 
@@ -263,6 +301,11 @@ class _SettingsHeader extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Row(
       children: [
+        _HeaderIconButton(
+          icon: Icons.arrow_back_rounded,
+          onTap: () => context.go('/main?tab=0'),
+        ),
+        const SizedBox(width: 12),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -283,78 +326,196 @@ class _SettingsHeader extends ConsumerWidget {
             ],
           ),
         ),
-        PopupMenuButton<String>(
-          color: AppTheme.cardColor(context),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          onSelected: (value) async {
-            if (value == 'logout') {
-              await ref.read(authServiceProvider).logout();
-
-              ref.invalidate(clientControllerProvider);
-              ref.invalidate(projectControllerProvider);
-              ref.invalidate(taskControllerProvider);
-              ref.invalidate(themeModeProvider);
-
-              if (!context.mounted) return;
-
-              context.go('/login');
-            }
-
-            if (value == 'about') {
-              showAboutDialog(
-                context: context,
-                applicationName: 'Deskly',
-                applicationVersion: '1.0.0',
-              );
-            }
-          },
-          itemBuilder: (context) => [
-            PopupMenuItem(
-              value: 'about',
-              child: Text(
-                'À propos',
-                style: TextStyle(
-                  color: AppTheme.mainTextColor(context),
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-            const PopupMenuItem(
-              value: 'logout',
-              child: Text(
-                'Déconnexion',
-                style: TextStyle(
-                  color: Color(0xFFDC2626),
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ],
-          child: Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: AppTheme.cardColor(context),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppTheme.borderColor(context)),
-            ),
-            child: Icon(
-              Icons.settings_rounded,
-              color: AppTheme.mainTextColor(context),
-            ),
-          ),
+        _HeaderIconButton(
+          icon: Icons.more_horiz_rounded,
+          onTap: () => _openQuickMenu(context, ref),
+          isPrimary: true,
         ),
       ],
     );
   }
 }
 
-class _ProfileCard extends StatelessWidget {
-  const _ProfileCard({required this.email});
+class _HeaderIconButton extends StatelessWidget {
+  const _HeaderIconButton({
+    required this.icon,
+    required this.onTap,
+    this.isPrimary = false,
+  });
 
+  final IconData icon;
+  final VoidCallback onTap;
+  final bool isPrimary;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isPrimary
+        ? AppTheme.primaryColor
+        : AppTheme.mainTextColor(context);
+
+    return Material(
+      color: isPrimary
+          ? AppTheme.primaryColor.withValues(alpha: 0.12)
+          : AppTheme.cardColor(context),
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isPrimary
+                  ? AppTheme.primaryColor.withValues(alpha: 0.14)
+                  : AppTheme.borderColor(context),
+            ),
+          ),
+          child: Icon(icon, color: color),
+        ),
+      ),
+    );
+  }
+}
+
+Future<void> _logout(BuildContext context, WidgetRef ref) async {
+  await ref.read(authServiceProvider).logout();
+
+  ref.invalidate(clientControllerProvider);
+  ref.invalidate(projectControllerProvider);
+  ref.invalidate(taskControllerProvider);
+  ref.invalidate(themeModeProvider);
+
+  if (!context.mounted) return;
+
+  context.go('/login');
+}
+
+Future<void> _openQuickMenu(BuildContext context, WidgetRef ref) async {
+  await showModalBottomSheet(
+    context: context,
+    backgroundColor: AppTheme.cardColor(context),
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+    ),
+    builder: (sheetContext) {
+      return SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 14, 20, 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 44,
+                height: 5,
+                decoration: BoxDecoration(
+                  color: AppTheme.borderColor(context),
+                  borderRadius: BorderRadius.circular(100),
+                ),
+              ),
+              const SizedBox(height: 18),
+              _QuickMenuTile(
+                icon: Icons.info_outline_rounded,
+                title: 'À propos',
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  showAboutDialog(
+                    context: context,
+                    applicationName: 'Deskly',
+                    applicationVersion: '1.0.0',
+                  );
+                },
+              ),
+              _QuickMenuTile(
+                icon: Icons.logout_rounded,
+                title: 'Déconnexion',
+                danger: true,
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  _logout(context, ref);
+                },
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
+
+class _QuickMenuTile extends StatelessWidget {
+  const _QuickMenuTile({
+    required this.icon,
+    required this.title,
+    required this.onTap,
+    this.danger = false,
+  });
+
+  final IconData icon;
+  final String title;
+  final VoidCallback onTap;
+  final bool danger;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = danger
+        ? const Color(0xFFDC2626)
+        : AppTheme.mainTextColor(context);
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          child: Row(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color:
+                      (danger ? const Color(0xFFDC2626) : AppTheme.primaryColor)
+                          .withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  icon,
+                  color: danger
+                      ? const Color(0xFFDC2626)
+                      : AppTheme.primaryColor,
+                  size: 19,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Text(
+                title,
+                style: TextStyle(
+                  color: color,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ProfileCard extends StatelessWidget {
+  const _ProfileCard({
+    required this.name,
+    required this.email,
+    required this.onEditName,
+  });
+
+  final String name;
   final String email;
+  final VoidCallback onEditName;
 
   @override
   Widget build(BuildContext context) {
@@ -393,13 +554,29 @@ class _ProfileCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Compte connecté',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w900,
-                  ),
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        name,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    GestureDetector(
+                      onTap: onEditName,
+                      child: Icon(
+                        Icons.edit_rounded,
+                        color: Colors.white.withValues(alpha: 0.85),
+                        size: 18,
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 6),
                 Text(
@@ -461,7 +638,9 @@ class _SettingsSection extends StatelessWidget {
                   if (entry.key != children.length - 1)
                     Divider(
                       height: 1,
-                      color: AppTheme.borderColor(context).withValues(alpha: 0.45),
+                      color: AppTheme.borderColor(
+                        context,
+                      ).withValues(alpha: 0.45),
                     ),
                 ],
               ),

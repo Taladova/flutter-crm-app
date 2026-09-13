@@ -7,6 +7,10 @@ class TaskModel {
     required this.status,
     required this.priority,
     required this.deadline,
+    this.visibleToClient = true,
+    this.internal = false,
+    this.isPrivate = false,
+    this.assignedTo = 'professional',
   });
 
   final String id;
@@ -16,6 +20,13 @@ class TaskModel {
   final String status;
   final String priority;
   final String deadline;
+  final bool visibleToClient;
+  final bool internal;
+  final bool isPrivate;
+  final String assignedTo;
+
+  bool get isVisibleInClientPortal => !internal && !isPrivate;
+  bool get isAssignedToClient => assignedTo == 'client';
 
   TaskModel copyWith({
     String? id,
@@ -25,6 +36,10 @@ class TaskModel {
     String? status,
     String? priority,
     String? deadline,
+    bool? visibleToClient,
+    bool? internal,
+    bool? isPrivate,
+    String? assignedTo,
   }) {
     return TaskModel(
       id: id ?? this.id,
@@ -34,6 +49,10 @@ class TaskModel {
       status: status ?? this.status,
       priority: priority ?? this.priority,
       deadline: deadline ?? this.deadline,
+      visibleToClient: visibleToClient ?? this.visibleToClient,
+      internal: internal ?? this.internal,
+      isPrivate: isPrivate ?? this.isPrivate,
+      assignedTo: assignedTo ?? this.assignedTo,
     );
   }
 
@@ -46,10 +65,17 @@ class TaskModel {
       'status': status,
       'priority': priority,
       'deadline': deadline,
+      'visibleToClient': visibleToClient,
+      'internal': internal,
+      'private': isPrivate,
+      'assignedTo': assignedTo,
     };
   }
 
   factory TaskModel.fromJson(Map<String, dynamic> json) {
+    final internal = json['internal'] == true;
+    final isPrivate = json['private'] == true;
+
     return TaskModel(
       id: json['id'] ?? '',
       title: json['title'] ?? '',
@@ -58,6 +84,10 @@ class TaskModel {
       status: json['status'] ?? 'À faire',
       priority: json['priority'] ?? 'Moyenne',
       deadline: json['deadline'] ?? '',
+      visibleToClient: json['visibleToClient'] ?? true,
+      internal: internal,
+      isPrivate: isPrivate,
+      assignedTo: json['assignedTo'] ?? 'professional',
     );
   }
 }

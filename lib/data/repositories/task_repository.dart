@@ -2,9 +2,7 @@ import '../models/task_model.dart';
 import '../services/firestore_service.dart';
 
 class TaskRepository {
-  const TaskRepository({
-    required this.firestoreService,
-  });
+  const TaskRepository({required this.firestoreService});
 
   final FirestoreService firestoreService;
 

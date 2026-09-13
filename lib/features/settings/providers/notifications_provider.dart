@@ -5,8 +5,8 @@ const _notificationsEnabledKey = 'notifications_enabled';
 
 final notificationsEnabledProvider =
     AsyncNotifierProvider<NotificationsController, bool>(
-  NotificationsController.new,
-);
+      NotificationsController.new,
+    );
 
 class NotificationsController extends AsyncNotifier<bool> {
   @override

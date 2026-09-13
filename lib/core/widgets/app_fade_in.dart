@@ -1,11 +1,7 @@
 import 'package:flutter/material.dart';
 
 class AppFadeIn extends StatefulWidget {
-  const AppFadeIn({
-    super.key,
-    required this.child,
-    this.delay = 0,
-  });
+  const AppFadeIn({super.key, required this.child, this.delay = 0});
 
   final Widget child;
   final int delay;
@@ -51,10 +47,7 @@ class _AppFadeInState extends State<AppFadeIn>
   Widget build(BuildContext context) {
     return FadeTransition(
       opacity: opacity,
-      child: SlideTransition(
-        position: slide,
-        child: widget.child,
-      ),
+      child: SlideTransition(position: slide, child: widget.child),
     );
   }
 }

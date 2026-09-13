@@ -2,10 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class FirestoreService {
-  FirestoreService({
-    required this.firestore,
-    required this.auth,
-  });
+  FirestoreService({required this.firestore, required this.auth});
 
   final FirebaseFirestore firestore;
   final FirebaseAuth auth;

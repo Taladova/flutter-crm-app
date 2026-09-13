@@ -23,7 +23,9 @@ class SharedProjectService {
     required ProjectModel project,
     required List<TaskModel> tasks,
   }) async {
-    final token = project.shareToken.isNotEmpty ? project.shareToken : _generateToken();
+    final token = project.shareToken.isNotEmpty
+        ? project.shareToken
+        : _generateToken();
 
     await _collection.doc(token).set({
       'ownerUid': ownerUid,
@@ -35,6 +37,8 @@ class SharedProjectService {
       'budget': project.budget,
       'deadline': project.deadline,
       'progress': project.progress,
+      'currentStep': project.currentStep,
+      'nextStep': project.nextStep,
       'tasks': tasks
           .map((task) => {'title': task.title, 'status': task.status})
           .toList(),

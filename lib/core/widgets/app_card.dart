@@ -24,9 +24,7 @@ class AppCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppTheme.cardColor(context),
         borderRadius: BorderRadius.circular(borderRadius),
-        border: Border.all(
-          color: AppTheme.borderColor(context),
-        ),
+        border: Border.all(color: AppTheme.borderColor(context)),
         boxShadow: [
           if (!isDark)
             BoxShadow(

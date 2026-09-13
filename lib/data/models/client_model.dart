@@ -8,6 +8,7 @@ class ClientModel {
     required this.projectsCount,
     required this.status,
     this.notes = '',
+    this.shareToken = '',
   });
 
   final String id;
@@ -18,8 +19,11 @@ class ClientModel {
   final int projectsCount;
   final String status;
   final String notes;
+  final String shareToken;
 
-  ClientModel copyWith({String? notes}) {
+  bool get isShared => shareToken.isNotEmpty;
+
+  ClientModel copyWith({String? notes, String? shareToken}) {
     return ClientModel(
       id: id,
       name: name,
@@ -29,6 +33,7 @@ class ClientModel {
       projectsCount: projectsCount,
       status: status,
       notes: notes ?? this.notes,
+      shareToken: shareToken ?? this.shareToken,
     );
   }
 
@@ -42,6 +47,7 @@ class ClientModel {
       'projectsCount': projectsCount,
       'status': status,
       'notes': notes,
+      'shareToken': shareToken,
     };
   }
 
@@ -55,6 +61,7 @@ class ClientModel {
       projectsCount: json['projectsCount'] ?? 0,
       status: json['status'] ?? 'Prospect',
       notes: json['notes'] ?? '',
+      shareToken: json['shareToken'] ?? '',
     );
   }
 }

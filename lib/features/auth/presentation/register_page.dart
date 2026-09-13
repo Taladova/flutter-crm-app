@@ -80,9 +80,9 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   String getFirebaseErrorMessage(String code) {
     switch (code) {
       case 'email-already-in-use':
-        return 'Cet email est déjà utilisé.';
+        return 'Cette adresse e-mail est déjà utilisée.';
       case 'invalid-email':
-        return 'Adresse email invalide.';
+        return 'Adresse e-mail invalide.';
       case 'weak-password':
         return 'Mot de passe trop faible.';
       default:
@@ -132,7 +132,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
             decoration: BoxDecoration(
               color: AppTheme.cardColor(context),
               borderRadius: BorderRadius.circular(15),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
+              border: Border.all(color: AppTheme.borderColor(context)),
             ),
             child: Icon(
               Icons.arrow_back_rounded,
@@ -168,7 +168,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
         const SizedBox(height: 18),
         _InputField(
           controller: emailController,
-          label: 'Adresse email',
+          label: 'Adresse e-mail',
           hint: 'exemple@email.com',
           icon: Icons.email_rounded,
           keyboardType: TextInputType.emailAddress,
@@ -305,11 +305,11 @@ class _InputField extends StatelessWidget {
             ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(18),
-              borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+              borderSide: BorderSide(color: AppTheme.borderColor(context)),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(18),
-              borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+              borderSide: BorderSide(color: AppTheme.borderColor(context)),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(18),

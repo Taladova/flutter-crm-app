@@ -9,7 +9,7 @@ class AppStatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = _getColors(status);
+    final colors = _getColors(context, status);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
@@ -28,7 +28,7 @@ class AppStatusBadge extends StatelessWidget {
     );
   }
 
-  _BadgeColors _getColors(String status) {
+  _BadgeColors _getColors(BuildContext context, String status) {
     switch (status) {
       case 'Actif':
       case 'En cours':
@@ -55,12 +55,12 @@ class AppStatusBadge extends StatelessWidget {
       case 'Prospect':
         return const _BadgeColors(
           background: Color(0xFFEFF6FF),
-          text: AppTheme.primaryColor,
+          text: AppTheme.secondaryColor,
         );
 
       default:
-        return const _BadgeColors(
-          background: Color(0xFFF1F5F9),
+        return _BadgeColors(
+          background: AppTheme.secondarySurface(context),
           text: AppTheme.greyTextColor,
         );
     }

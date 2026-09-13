@@ -26,7 +26,9 @@ class LegalPage extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: AppTheme.cardColor(context),
                         borderRadius: BorderRadius.circular(15),
-                        border: Border.all(color: AppTheme.borderColor(context)),
+                        border: Border.all(
+                          color: AppTheme.borderColor(context),
+                        ),
                       ),
                       child: Icon(
                         Icons.arrow_back_rounded,
@@ -47,7 +49,7 @@ class LegalPage extends StatelessWidget {
               const _Section(
                 title: 'Données collectées',
                 body:
-                    'Deskly collecte votre nom et votre adresse email lors de la création de '
+                    'Deskly collecte votre nom et votre adresse e-mail lors de la création de '
                     'votre compte, ainsi que les données que vous saisissez vous-même dans '
                     'l\'application : clients, projets, tâches et notes associées. Ces '
                     'données ne sont ni revendues ni utilisées à des fins publicitaires.',
@@ -83,7 +85,8 @@ class LegalPage extends StatelessWidget {
               ),
               const _Section(
                 title: 'Contact',
-                body: 'contact@deskly.app (à remplacer par votre adresse réelle)',
+                body:
+                    'contact@deskly.app (à remplacer par votre adresse réelle)',
                 isPlaceholder: true,
               ),
               const SizedBox(height: 8),
@@ -147,7 +150,10 @@ class _Section extends StatelessWidget {
                 if (isPlaceholder) ...[
                   const SizedBox(width: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFFD97706).withValues(alpha: 0.14),
                       borderRadius: BorderRadius.circular(100),

@@ -5,8 +5,7 @@ import '../features/auth/providers/auth_providers.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../data/providers/firestore_providers.dart';
 
-final themeModeProvider =
-    AsyncNotifierProvider<ThemeModeController, ThemeMode>(
+final themeModeProvider = AsyncNotifierProvider<ThemeModeController, ThemeMode>(
   ThemeModeController.new,
 );
 
@@ -54,8 +53,6 @@ class ThemeModeController extends AsyncNotifier<ThemeMode> {
         .doc(user.uid)
         .collection('settings')
         .doc('preferences')
-        .set({
-      'themeMode': isDark ? 'dark' : 'light',
-    }, SetOptions(merge: true));
+        .set({'themeMode': isDark ? 'dark' : 'light'}, SetOptions(merge: true));
   }
 }

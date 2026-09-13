@@ -46,7 +46,7 @@ class TaskDetailPage extends ConsumerWidget {
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: task.status == 'Terminé'
-                              ? const Color(0xFFF1F5F9)
+                              ? AppTheme.lightSecondarySurfaceColor
                               : AppTheme.primaryColor,
                           foregroundColor: task.status == 'Terminé'
                               ? AppTheme.mainTextColor(context)
@@ -109,9 +109,9 @@ Future<void> _confirmDeleteTask(
 
   if (!context.mounted) return;
 
-  ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(content: Text('Tâche supprimée.')),
-  );
+  ScaffoldMessenger.of(
+    context,
+  ).showSnackBar(const SnackBar(content: Text('Tâche supprimée.')));
 
   context.pop();
 }
@@ -139,7 +139,7 @@ class _TaskHeader extends StatelessWidget {
             decoration: BoxDecoration(
               color: AppTheme.cardColor(context),
               borderRadius: BorderRadius.circular(15),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
+              border: Border.all(color: AppTheme.borderColor(context)),
             ),
             child: Icon(
               Icons.arrow_back_rounded,
@@ -179,7 +179,7 @@ class _TaskHeader extends StatelessWidget {
             decoration: BoxDecoration(
               color: AppTheme.cardColor(context),
               borderRadius: BorderRadius.circular(15),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
+              border: Border.all(color: AppTheme.borderColor(context)),
             ),
             child: const Icon(
               Icons.delete_outline_rounded,
@@ -236,7 +236,7 @@ class _TaskInfoCard extends StatelessWidget {
           const SizedBox(height: 14),
           _InfoRow(
             icon: Icons.event_rounded,
-            label: 'Deadline',
+            label: 'Échéance',
             value: task.deadline,
           ),
         ],

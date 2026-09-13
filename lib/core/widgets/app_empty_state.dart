@@ -23,7 +23,11 @@ class AppEmptyState extends StatelessWidget {
       padding: const EdgeInsets.all(28),
       child: Column(
         children: [
-          Icon(icon, size: 48, color: AppTheme.secondaryTextColor(context).withValues(alpha: 0.8)),
+          Icon(
+            icon,
+            size: 48,
+            color: AppTheme.secondaryTextColor(context).withValues(alpha: 0.8),
+          ),
           const SizedBox(height: 16),
           Text(
             title,
